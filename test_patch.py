@@ -163,12 +163,3 @@ if __name__ == '__main__':
                     textfile.write(f'{cls_id} {x_center} {y_center} {width} {height}\n')
                     noise_results.append({'image_id': name, 'bbox': [x_center.item() - width.item() / 2, y_center.item() - height.item() / 2, width.item(), height.item()], 'score': box[4].item(), 'category_id': 1})
             textfile.close()
-
-    # with open('clean_results.json', 'w') as fp:
-    #     json.dump(clean_results, fp)
-    # with open('noise_results.json', 'w') as fp:
-    #     json.dump(noise_results, fp)
-    # with open('patch_results.json', 'w') as fp:
-    #     json.dump(patch_results, fp)
-    #
-
