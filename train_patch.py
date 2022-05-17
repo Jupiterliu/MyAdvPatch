@@ -111,8 +111,8 @@ class PatchTrainer(object):
                     # pnorm = self.pnorm_loss(adv_patch, p_img_batch)
 
                     # From the Loss weights to cal the total Loss
-                    nps_loss = nps      # 0.01
-                    tv_loss = tv * 5    # 2.5
+                    nps_loss = nps * 0.1     # 0.01
+                    tv_loss = tv * 3.5    # 2.5
                     loss = attack_loss + nps_loss + torch.max(tv_loss, torch.tensor(0.1).cuda())
 
                     ep_attack_loss += attack_loss.detach().cpu().numpy()
@@ -154,16 +154,12 @@ class PatchTrainer(object):
 
             scheduler.step(ep_loss)
             if True:
-                print('  EPOCH NR: ', epoch),
-                print('EPOCH LOSS: ', ep_loss)
-                print('  DET LOSS: ', ep_attack_loss)
-                print('  NPS LOSS: ', ep_nps_loss)
-                print('   TV LOSS: ', ep_tv_loss)
-                print('EPOCH TIME: ', et1-et0)
-                #im = transforms.ToPILImage('RGB')(adv_patch_cpu)
-                #plt.imshow(im)
-                #plt.show()
-                #im.save("saved_patches/patchnew1.jpg")
+                print('   EPOCH NR: ', epoch),
+                print(' EPOCH LOSS: ', ep_loss)
+                print('ATTACK LOSS: ', ep_attack_loss)
+                print('   NPS LOSS: ', ep_nps_loss)
+                print('    TV LOSS: ', ep_tv_loss)
+                print(' EPOCH TIME: ', et1-et0)
                 del adv_batch_t, steer_pred, coll_pred, attack_loss, p_img_batch, nps_loss, tv_loss, loss
                 torch.cuda.empty_cache()
             et0 = time.time()

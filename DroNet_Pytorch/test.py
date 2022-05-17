@@ -80,15 +80,15 @@ def testModel(model):
                     'constant_regression.json': constant_steerings}
 
     # Evaluate predictions: EVA, residuals, and highest errors
-    paths = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test1_RGB"
+    paths = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test5_RGB_new_loss_500epochs"
     for fname, pred in dict_fname.items():
-        abs_fname = os.path.join(paths, "evaludation", fname)
+        abs_fname = os.path.join(paths, "evaluation", fname)
         evaluate_regression(pred, real_steerings, abs_fname)
 
     # Write predicted and real steerings
     dict_test = {'pred_steerings': pred_steerings.tolist(),
                     'real_steerings': real_steerings.tolist()}
-    write_to_file(dict_test, os.path.join(paths, "evaludation", 'predicted_and_real_steerings.json'))
+    write_to_file(dict_test, os.path.join(paths, "evaluation", 'predicted_and_real_steerings.json'))
 
     # *********************** Collision evaluation ****************************
     # Predicted probabilities and real labels
@@ -106,12 +106,12 @@ def testModel(model):
 
     # Evaluate predictions: accuracy, precision, recall, F1-score, and highest errors
     for fname, pred in dict_fname.items():
-        abs_fname = os.path.join(paths, "evaludation", fname)
+        abs_fname = os.path.join(paths, "evaluation", fname)
         evaluate_classification(pred_collisions, pred, real_labels, abs_fname)
 
     # Write predicted probabilities and real labels
     dict_test = {'pred_probabilities': pred_collisions.tolist(), 'real_labels': real_labels.tolist()}
-    write_to_file(dict_test, os.path.join(paths, "evaludation", 'predicted_and_real_labels.json'))
+    write_to_file(dict_test, os.path.join(paths, "evaluation", 'predicted_and_real_labels.json'))
 
 def random_regression_baseline(real_values):
     mean = np.mean(real_values)
@@ -206,7 +206,7 @@ def compute_highest_classification_errors(predictions, real_values, n_errors=20)
 
 
 if __name__ == '__main__':
-    weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test1_RGB/weights_199.pth"
+    weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test5_RGB_new_loss_500epochs/weights_205.pth"
     dronet = getModel((200, 200), 3, 1, weights_path)
     print(dronet)
     dronet = dronet.eval().cuda()
