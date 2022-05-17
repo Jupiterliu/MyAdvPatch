@@ -22,12 +22,12 @@ from median_pool import MedianPool2d
 # im = Image.open('data/horse.jpg').convert('RGB')
 # print('img read!')
 
-class AttackLoss(nn.Module):
+class Attack_Loss(nn.Module):
     """AttackLoss: Calculate the detection loss, targted and non-targeted.
     
     """
     def __init__(self):
-        super(AttackLoss, self).__init__()
+        super(Attack_Loss, self).__init__()
         self.beta = torch.Tensor([0]).float().cuda()
         
     def forward(self, k, steer_true, steer_pred, coll_true, coll_pred, steer_target, coll_target, is_targted):
@@ -42,6 +42,8 @@ class AttackLoss(nn.Module):
     def targeted_attack_loss(self, k, steer_true, steer_pred, coll_true, coll_pred, steer_target, coll_target):
         # Steer angle
         # steer_target = torch.cuda.FloatTensor(torch.Size((steer_true.size(0), 1))).fill_(steer_target)
+        balance_steer = 2
+        balance_coll = 2
         target_steer = steer_true.clone()
         target_steer[:, 1] = steer_target
         loss1 = self.hard_mining_mse(k, steer_true, steer_pred)
@@ -49,10 +51,10 @@ class AttackLoss(nn.Module):
         # collision
         # coll_target = torch.cuda.FloatTensor(torch.Size((coll_true.size(0), 1))).fill_(coll_target)
         target_coll = steer_true.clone()
-        target_coll[:, 1] = steer_target
+        target_coll[:, 1] = coll_target
         loss3 = self.hard_mining_entropy(k, coll_true, coll_pred)
         loss4 = self.hard_mining_entropy(k, target_coll, coll_pred)
-        return torch.mean((-loss1 + loss2) + (-loss3 + loss4))
+        return torch.mean((-loss1 + balance_steer * loss2) + (-loss3 + balance_coll* loss4))
 
     def untargeted_attack_loss(self, k, steer_true, steer_pred, coll_true, coll_pred):
         # for steering angle
@@ -98,7 +100,17 @@ class AttackLoss(nn.Module):
             hard_loss_coll = torch.div(torch.sum(max_loss_coll), k_min)
             return hard_loss_coll
 
-class NPSCalculator(nn.Module):
+class PNorm_Loss(nn.Module):
+    """
+
+    """
+    def __init__(self):
+        super(PNorm_Loss, self).__init__()
+
+    def forward(self, adv_patch, patched_img):
+        return adv_patch
+
+class NPS_Loss(nn.Module):
     """NMSCalculator: calculates the non-printability score of a patch.
 
     Module providing the functionality necessary to calculate the non-printability score (NMS) of an adversarial patch.
@@ -106,7 +118,7 @@ class NPSCalculator(nn.Module):
     """
 
     def __init__(self, printability_file, patch_side):
-        super(NPSCalculator, self).__init__()
+        super(NPS_Loss, self).__init__()
         self.printability_array = nn.Parameter(self.get_printability_array(printability_file, patch_side),requires_grad=False)
 
     def forward(self, adv_patch):
@@ -146,7 +158,7 @@ class NPSCalculator(nn.Module):
         return pa
 
 
-class TotalVariation(nn.Module):
+class TV_Loss(nn.Module):
     """TotalVariation: calculates the total variation of a patch.
 
     Module providing the functionality necessary to calculate the total vatiation (TV) of an adversarial patch.
@@ -154,7 +166,7 @@ class TotalVariation(nn.Module):
     """
 
     def __init__(self):
-        super(TotalVariation, self).__init__()
+        super(TV_Loss, self).__init__()
 
     def forward(self, adv_patch):
         # bereken de total variation van de adv_patch

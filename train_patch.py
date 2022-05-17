@@ -40,9 +40,10 @@ class PatchTrainer(object):
         self.patch_transformer = PatchTransformer().cuda()
 
         # Load Methods to calcu Loss: AttackLoss, NPS Loss, TV Loss
-        self.my_pred_loss = AttackLoss().cuda()
-        self.nps_calculator = NPSCalculator(self.config.printfile, self.config.patch_size).cuda()
-        self.total_variation = TotalVariation().cuda()
+        self.attack_loss = Attack_Loss().cuda()
+        self.nps_loss = NPS_Loss(self.config.printfile, self.config.patch_size).cuda()
+        self.tv_loss = TV_Loss().cuda()
+        # self.pnorm_loss = NPS_Loss().cuda()
 
         # Load the recording Tensorboard
         self.writer = self.init_tensorboard(mode)
@@ -78,7 +79,7 @@ class PatchTrainer(object):
 
         et0 = time.time()
         for epoch in range(self.config.n_epochs):
-            ep_pred_loss = 0
+            ep_attack_loss = 0
             ep_nps_loss = 0
             ep_tv_loss = 0
             ep_loss = 0
@@ -103,17 +104,18 @@ class PatchTrainer(object):
                     steer_pred, coll_pred = self.dronet_model(p_img_batch)
 
                     # Cal 3 Losses from true and pred
-                    pred_loss = self.my_pred_loss(self.config.k, steer_true, steer_pred, coll_true, coll_pred,
+                    attack_loss = self.attack_loss(self.config.k, steer_true, steer_pred, coll_true, coll_pred,
                                                     self.config.steer_target, self.config.coll_target, self.config.is_targeted)
-                    nps = self.nps_calculator(adv_patch)
-                    tv = self.total_variation(adv_patch)
+                    nps = self.nps_loss(adv_patch)
+                    tv = self.tv_loss(adv_patch)
+                    # pnorm = self.pnorm_loss(adv_patch, p_img_batch)
 
                     # From the Loss weights to cal the total Loss
-                    nps_loss = nps*0.1  # 0.01
-                    tv_loss = tv*5  # 2.5
-                    loss = pred_loss + nps_loss + torch.max(tv_loss, torch.tensor(0.1).cuda())
+                    nps_loss = nps      # 0.01
+                    tv_loss = tv * 5    # 2.5
+                    loss = attack_loss + nps_loss + torch.max(tv_loss, torch.tensor(0.1).cuda())
 
-                    ep_pred_loss += pred_loss.detach().cpu().numpy()
+                    ep_attack_loss += attack_loss.detach().cpu().numpy()
                     ep_nps_loss += nps_loss.detach().cpu().numpy()
                     ep_tv_loss += tv_loss.detach().cpu().numpy()
                     ep_loss += loss
@@ -128,7 +130,7 @@ class PatchTrainer(object):
                     if i_batch % 5 == 0:
                         iteration = self.epoch_length * epoch + i_batch
                         self.writer.add_scalar('total_loss', loss.detach().cpu().numpy(), iteration)
-                        self.writer.add_scalar('loss/pred_loss', pred_loss.detach().cpu().numpy(), iteration)
+                        self.writer.add_scalar('loss/attack_loss', attack_loss.detach().cpu().numpy(), iteration)
                         self.writer.add_scalar('loss/nps_loss', nps_loss.detach().cpu().numpy(), iteration)
                         self.writer.add_scalar('loss/tv_loss', tv_loss.detach().cpu().numpy(), iteration)
                         self.writer.add_scalar('misc/epoch', epoch, iteration)
@@ -137,11 +139,11 @@ class PatchTrainer(object):
                     if i_batch + 1 >= len(training_dataloader):
                         print('\n')
                     else:
-                        del adv_batch_t, steer_pred, coll_pred, pred_loss, p_img_batch, nps_loss, tv_loss, loss
+                        del adv_batch_t, steer_pred, coll_pred, attack_loss, p_img_batch, nps_loss, tv_loss, loss
                         torch.cuda.empty_cache()
                     bt0 = time.time()
             et1 = time.time()
-            ep_pred_loss = ep_pred_loss/len(training_dataloader)
+            ep_attack_loss = ep_attack_loss/len(training_dataloader)
             ep_nps_loss = ep_nps_loss/len(training_dataloader)
             ep_tv_loss = ep_tv_loss/len(training_dataloader)
             ep_loss = ep_loss/len(training_dataloader)
@@ -154,7 +156,7 @@ class PatchTrainer(object):
             if True:
                 print('  EPOCH NR: ', epoch),
                 print('EPOCH LOSS: ', ep_loss)
-                print('  DET LOSS: ', ep_pred_loss)
+                print('  DET LOSS: ', ep_attack_loss)
                 print('  NPS LOSS: ', ep_nps_loss)
                 print('   TV LOSS: ', ep_tv_loss)
                 print('EPOCH TIME: ', et1-et0)
@@ -162,7 +164,7 @@ class PatchTrainer(object):
                 #plt.imshow(im)
                 #plt.show()
                 #im.save("saved_patches/patchnew1.jpg")
-                del adv_batch_t, steer_pred, coll_pred, pred_loss, p_img_batch, nps_loss, tv_loss, loss
+                del adv_batch_t, steer_pred, coll_pred, attack_loss, p_img_batch, nps_loss, tv_loss, loss
                 torch.cuda.empty_cache()
             et0 = time.time()
 

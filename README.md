@@ -6,19 +6,11 @@ Dronet is implemented by Keras/Tensorflow, but we here recurrence it by Pytorch 
 
 # What you need
 ## Environments
-Python == 3.6
-
-Pytorch == 1.10.2
-
-Torchvision == 0.11.3
-
-OpenCV == 4.5.5.64
-
-Tensorboard == 2.8.0
-
-TensorboardX == 2.5
-
-Also you need a device supported GPU.
+Our python is 3.6, and you can meet the environments by running:
+```
+pip install -r requirements.txt
+```
+Note: suppose your device support GPU.
 
 
 ## Datasets
