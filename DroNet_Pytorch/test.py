@@ -1,7 +1,7 @@
 import torch
 from load_datasets import DronetDataset
 from dronet_torch import DronetTorch
-from dronet_torch_train import getModel
+from dronet_torch import getModel
 import sklearn
 import re
 import os

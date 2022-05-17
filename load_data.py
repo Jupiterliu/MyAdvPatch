@@ -15,7 +15,6 @@ from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms
 
-from darknet import Darknet
 
 from median_pool import MedianPool2d
 
@@ -182,20 +181,23 @@ class PatchTransformer(nn.Module):
         self.max_contrast = 1.3  # 1.2
         self.min_brightness = -0.2  # -0.1
         self.max_brightness = 0.2  # 0.1
+        self.min_scale = 0.2  # Scale the patch size from (patch_size * min_scale) to (patch_size * max_scale)
+        self.max_scale = 1.5
         self.noise_factor = 0.10
         self.minangle = -20 / 180 * math.pi
         self.maxangle = 20 / 180 * math.pi
         self.medianpooler = MedianPool2d(7, same=True)
 
-    def forward(self, adv_patch, steer_true, coll_true, img_size, do_rotate=True, rand_loc=True):
+    def forward(self, adv_patch, steer_true, img_size, do_rotate=True, rand_loc=True):
         # adv_patch = F.conv2d(adv_patch.unsqueeze(0),self.kernel,padding=(2,2))
         adv_patch = self.medianpooler(adv_patch.unsqueeze(0))
         # Determine size of padding
         pad = (img_size - adv_patch.size(-1)) / 2
         # Make a batch of patches
         adv_patch = adv_patch.unsqueeze(0)  # .unsqueeze(0)
-        adv_batch = adv_patch.expand(steer_true.size(0), steer_true.size(1), -1, -1, -1)
-        batch_size = torch.Size((steer_true.size(0), steer_true.size(1)))
+        adv_batch = adv_patch.expand(steer_true.size(0), 1, -1, -1, -1)
+        batch_size = torch.Size((steer_true.size(0), 1))
+        anglesize = steer_true.size(0)
 
         # Contrast, brightness and noise transforms
 
@@ -211,6 +213,11 @@ class PatchTransformer(nn.Module):
         brightness = brightness.expand(-1, -1, adv_batch.size(-3), adv_batch.size(-2), adv_batch.size(-1))
         brightness = brightness.cuda()
 
+        # Create random scale tensor
+        scale = torch.cuda.FloatTensor(batch_size).uniform_(self.min_scale, self.max_scale)
+        scale = scale.view(anglesize)
+        scale = scale.cuda()
+
         # Create random noise tensor
         noise = torch.cuda.FloatTensor(adv_batch.size()).uniform_(-1, 1) * self.noise_factor
 
@@ -221,7 +228,7 @@ class PatchTransformer(nn.Module):
 
         # Where the label class_id is 1 we don't want a patch (padding) --> fill mask with zero's
         # cls_ids = torch.narrow(lab_batch, 2, 0, 1)
-        cls_ids = (torch.cuda.FloatTensor(coll_true.size()).unsqueeze(-1)).fill_(0)
+        cls_ids = (torch.cuda.FloatTensor(batch_size).unsqueeze(-1)).fill_(0)
         cls_mask = cls_ids.expand(-1, -1, 3)
         cls_mask = cls_mask.unsqueeze(-1)
         cls_mask = cls_mask.expand(-1, -1, -1, adv_batch.size(3))
@@ -235,23 +242,12 @@ class PatchTransformer(nn.Module):
         msk_batch = mypad(msk_batch)
 
         # Rotation and rescaling transforms
-        anglesize = (steer_true.size(0) * steer_true.size(1))
         if do_rotate:
             angle = torch.cuda.FloatTensor(anglesize).uniform_(self.minangle, self.maxangle)
         else:
             angle = torch.cuda.FloatTensor(anglesize).fill_(0)
 
         # Resizes and rotates
-        current_patch_size = adv_patch.size(-1)
-        # lab_batch_scaled = torch.cuda.FloatTensor(lab_batch.size()).fill_(0)
-        lab_batch_scaled = (torch.cuda.FloatTensor(coll_true.size()).fill_(0)).unsqueeze(-1)
-        lab_batch_scaled = lab_batch_scaled.expand(-1, -1, 5)
-        lab_batch_scaled[:, :, 1] = 0.861575186252594 * img_size
-        lab_batch_scaled[:, :, 2] = 0.32314783334732056 * img_size
-        lab_batch_scaled[:, :, 3] = 0.13357515633106232 * img_size
-        lab_batch_scaled[:, :, 4] = 0.5612906217575073 * img_size
-        target_size = torch.sqrt(
-            ((lab_batch_scaled[:, :, 3].mul(0.2)) ** 2) + ((lab_batch_scaled[:, :, 4].mul(0.2)) ** 2))
         target_x = torch.cuda.FloatTensor([0.561575186252594])
         target_y = torch.cuda.FloatTensor([0.52314783334732056])
         targetoff_x = torch.cuda.FloatTensor([0.13357515633106232])
@@ -262,8 +258,6 @@ class PatchTransformer(nn.Module):
             off_y = targetoff_y * (torch.cuda.FloatTensor(targetoff_y.size()).uniform_(-0.4, 0.4))
             target_y = target_y + off_y
         target_y = target_y - 0.05
-        scale = (torch.cuda.FloatTensor(coll_true.size()).fill_(0.7))  # target_size / current_patch_size
-        scale = scale.view(anglesize)
 
         s = adv_batch.size()
         adv_batch = adv_batch.view(s[0] * s[1], s[2], s[3], s[4])
@@ -289,28 +283,10 @@ class PatchTransformer(nn.Module):
         adv_batch_t = F.grid_sample(adv_batch, grid)
         msk_batch_t = F.grid_sample(msk_batch, grid)
 
-        '''
-        # Theta2 = translation matrix
-        theta2 = torch.cuda.FloatTensor(anglesize, 2, 3).fill_(0)
-        theta2[:, 0, 0] = 1
-        theta2[:, 0, 1] = 0
-        theta2[:, 0, 2] = (-target_x + 0.5) * 2
-        theta2[:, 1, 0] = 0
-        theta2[:, 1, 1] = 1
-        theta2[:, 1, 2] = (-target_y + 0.5) * 2
-
-        grid2 = F.affine_grid(theta2, adv_batch.shape)
-        adv_batch_t = F.grid_sample(adv_batch_t, grid2)
-        msk_batch_t = F.grid_sample(msk_batch_t, grid2)
-        '''
         adv_batch_t = adv_batch_t.view(s[0], s[1], s[2], s[3], s[4])
         msk_batch_t = msk_batch_t.view(s[0], s[1], s[2], s[3], s[4])
 
         adv_batch_t = torch.clamp(adv_batch_t, 0.000001, 0.999999)
-        # img = msk_batch_t[0, 0, :, :, :].detach().cpu()
-        # img = transforms.ToPILImage()(img)
-        # img.show()
-        # exit()
 
         return adv_batch_t * msk_batch_t
 

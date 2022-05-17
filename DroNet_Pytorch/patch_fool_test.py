@@ -1,116 +1,214 @@
 import torch
-from dronet_datasets import DronetDataset
+from load_datasets import DronetDataset
 from dronet_torch import DronetTorch
-from dronet_torch_train import getModel
+from dronet_torch import getModel
 import sklearn
-from PIL import Image
-from load_data import *
-from tqdm import tqdm
+import re
+import os
+import numpy as np
+from random import randint
+from sklearn import metrics
+import json
 
-def testModel(model, adv_patch):
 
-    patch_applier = PatchApplier().cuda()
-    my_patch_transformer = MyPatchTransformer().cuda()
+def testModel(model):
+    '''
+    tests the model with the following metrics:
 
-    testing_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets/collision/collision_dataset',
-                                    'single-testing', augmentation=False)
+    root mean square error (RMSE) for steering angle.
 
-    testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=1,
+    expected variance for steering angle.
+
+    accuracy % for probability of collision.
+
+    f1 score for probability of collision.
+
+    ## parameters
+
+    `model`: `torch.nn.Module`: the dronet model.
+
+    `weights_path`: `str`: the path to the file to get
+    the weights from the trained model. No use in keeping it at the default of `None`,
+    and having (very, very, very likely) horrible metrics.
+    '''
+
+    testing_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'testing',
+                                    augmentation=False)
+
+    testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=16,
                                                      shuffle=True, num_workers=10)
     # go through all values
-    cumulative = 0
-    # cumulative_tensor_true = torch.cuda.FloatTensor(torch.Size((16,1))).fill_(0)
-    # cumulative_tensor_pred = torch.cuda.FloatTensor(torch.Size((16,1))).fill_(0)
-    cumulative_tensor_true = torch.Tensor().cuda()
-    cumulative_tensor_pred = torch.Tensor().cuda()
-    n = len(testing_dataloader)
-    num_correct = 0
-    false_negatives = 0
-    false_positives = 0
-    true_positives = 0
+    all_true_steer = torch.cuda.FloatTensor()
+    all_true_coll = torch.cuda.FloatTensor()
+    all_pred_steer = torch.cuda.FloatTensor()
+    all_pred_coll = torch.cuda.FloatTensor()
+    all_exp_type = torch.cuda.FloatTensor()
+
     for idx, (img, steer_true, coll_true) in enumerate(testing_dataloader):
         img_cuda = img.cuda()
-        steer_true = steer_true.cuda()
-        coll_true = coll_true.cuda()
+        true_steer = steer_true.squeeze(1).cuda()[:, 1]
+        true_coll = coll_true.squeeze(1).cuda()[:, 1]
+        exp_type = steer_true.squeeze(1).cuda()[:, 0]
+        steer_pred, coll_pred = model(img_cuda)
+        pred_steer = steer_pred.squeeze(-1)
+        pred_coll = coll_pred.squeeze(-1)
+        # print(f'Dronet Ground Truth {steer_true.item()} angle and {coll_true.item()} collision.')
+        # print(f'Dronet predicts {steer_pred.item()} angle and {coll_pred.item()} collision.\n')
 
-        patchs = my_patch_transformer(adv_patch, steer_true, coll_true, 416, do_rotate=True, rand_loc=False)
-        patched_images = patch_applier(img_cuda, patchs)
+        # All true and pred data:
+        all_true_steer = torch.cat((all_true_steer, true_steer))
+        all_true_coll = torch.cat((all_true_coll, true_coll))
+        all_pred_steer = torch.cat((all_pred_steer, pred_steer))
+        all_pred_coll = torch.cat((all_pred_coll, pred_coll))
+        all_exp_type = torch.cat((all_exp_type, exp_type))
 
-        steer_pred, coll_pred = model(patched_images)
-        print(f'Dronet Ground Truth {steer_true.item()} angle and {coll_true.item()} collision.')
-        print(f'Dronet predicts {steer_pred.item()} angle and {coll_pred.item()} collision.\n')
-        # rmse
-        cumulative += ((steer_pred - steer_true) ** 2)
+    # Param t. t=1 steering, t=0 collision
+    t_mask = all_exp_type == 1
 
-        # eva
-        # shape is (n,1), will be flatten out
-        cumulative_tensor_true = torch.cat((cumulative_tensor_true, steer_true))
-        cumulative_tensor_pred = torch.cat((cumulative_tensor_pred, steer_pred))
+    # ************************* Steering evaluation ***************************
+    # Predicted and real steerings
+    pred_steerings = all_pred_steer[t_mask, ].cpu().numpy()
+    real_steerings = all_true_steer[t_mask, ].cpu().numpy()
 
-        # accuracy
-        concrete_probs_true = coll_true >= 0.5
-        concrete_probs_pred = coll_pred >= 0.5
-        num_correct += torch.sum(concrete_probs_pred == concrete_probs_true)
+    # Compute random and constant baselines for steerings
+    random_steerings = random_regression_baseline(real_steerings)
+    constant_steerings = constant_baseline(real_steerings)
 
-        # get precision and recall
-        true_positives = torch.sum(concrete_probs_true)
-        for i in range(len(concrete_probs_pred)):
-            # thought was positive, but wasn't
-            if concrete_probs_pred[i] == True and concrete_probs_true[i] == False:
-                false_positives += 1
-            # thoght was negative, but wasn't
-            elif concrete_probs_pred[i] == False and concrete_probs_true[i] == True:
-                false_negatives += 1
+    # Create dictionary with filenames
+    dict_fname = {'test_regression.json': pred_steerings,
+                    'random_regression.json': random_steerings,
+                    'constant_regression.json': constant_steerings}
 
-        # f1 score, that's interesting
-    # p is the number of correct positive results divided by the
-    # number of all positive results returned by the classifier, and r is
-    # the number of correct positive results divided by the number of all relevant samples
-    # (all samples that should be positive)
-    # calculated root mean square error
-    rmse = torch.sqrt(torch.div(cumulative, n))
+    # Evaluate predictions: EVA, residuals, and highest errors
+    paths = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test1_RGB"
+    for fname, pred in dict_fname.items():
+        abs_fname = os.path.join(paths, "evaludation", fname)
+        evaluate_regression(pred, real_steerings, abs_fname)
 
-    # calculated expected variance
-    cumulative_tensor_pred = cumulative_tensor_pred.flatten()
-    cumulative_tensor_true = cumulative_tensor_true.flatten()
-    subtracted_var = torch.var(cumulative_tensor_true - cumulative_tensor_pred)
-    true_var = torch.var(cumulative_tensor_true)
-    eva = torch.div(subtracted_var, true_var)
+    # Write predicted and real steerings
+    dict_test = {'pred_steerings': pred_steerings.tolist(),
+                    'real_steerings': real_steerings.tolist()}
+    write_to_file(dict_test, os.path.join(paths, "evaludation", 'predicted_and_real_steerings.json'))
 
-    # accuracy
-    accuracy = torch.div(num_correct, n)
-    # f1 scoreu
-    precision = torch.div(true_positives, true_positives + false_positives)
-    recall = torch.div(true_positives, true_positives + false_negatives)
-    f1_score = 2 * (torch.div(precision.cpu() * recall.cpu(), precision.cpu() + recall.cpu()))
-    print('Testing complete. Displaying results..')
-    print('--------------------------')
-    print('RMSE(steer): ', rmse.item())
-    print('--------------------------')
-    print('Expected Variance(steer): ', eva.item())
-    print('--------------------------')
-    print('Accuracy(coll): ', accuracy.item())
-    print('--------------------------')
-    print('Precision(coll): ', precision.item())
-    print('--------------------------')
-    print('Recall(coll): ', recall.item())
-    print('--------------------------')
-    print('F1 Score(coll): ', f1_score.cpu().numpy())
-    print('**************************')
+    # *********************** Collision evaluation ****************************
+    # Predicted probabilities and real labels
+    pred_collisions = all_pred_coll[~t_mask, ].cpu().numpy()
+    pred_labels = np.zeros_like(pred_collisions)
+    pred_labels[pred_collisions >= 0.5] = 1
+    real_labels = all_true_coll[~t_mask, ].cpu().numpy()
+
+    # Compute random, weighted and majorirty-class baselines for collision
+    random_labels = random_classification_baseline(real_labels)
+
+    # Create dictionary with filenames
+    dict_fname = {'test_classification.json': pred_labels,
+                    'random_classification.json': random_labels}
+
+    # Evaluate predictions: accuracy, precision, recall, F1-score, and highest errors
+    for fname, pred in dict_fname.items():
+        abs_fname = os.path.join(paths, "evaludation", fname)
+        evaluate_classification(pred_collisions, pred, real_labels, abs_fname)
+
+    # Write predicted probabilities and real labels
+    dict_test = {'pred_probabilities': pred_collisions.tolist(), 'real_labels': real_labels.tolist()}
+    write_to_file(dict_test, os.path.join(paths, "evaludation", 'predicted_and_real_labels.json'))
+
+def random_regression_baseline(real_values):
+    mean = np.mean(real_values)
+    std = np.std(real_values)
+    return np.random.normal(loc=mean, scale=abs(std), size=real_values.shape)
+
+
+def constant_baseline(real_values):
+    mean = np.mean(real_values)
+    return mean * np.ones_like(real_values)
+
+def evaluate_regression(predictions, real_values, fname):
+    evas = compute_explained_variance(predictions, real_values)
+    rmse = compute_rmse(predictions, real_values)
+    highest_errors = compute_highest_regression_errors(predictions, real_values, n_errors=20)
+    dictionary = {"evas": evas.tolist(), "rmse": rmse.tolist(), "highest_errors": highest_errors.tolist()}
+    write_to_file(dictionary, fname)
+
+def compute_explained_variance(predictions, real_values):
+    """
+    Computes the explained variance of prediction for each
+    steering and the average of them
+    """
+    assert np.all(predictions.shape == real_values.shape)
+    ex_variance = explained_variance_1d(predictions, real_values)
+    print("EVA = {}".format(ex_variance))
+    return ex_variance
+
+def explained_variance_1d(ypred,y):
+    """
+    Var[ypred - y] / var[y].
+    https://www.quora.com/What-is-the-meaning-proportion-of-variance-explained-in-linear-regression
+    """
+    assert y.ndim == 1 and ypred.ndim == 1
+    vary = np.var(y)
+    return np.nan if vary==0 else 1 - np.var(y-ypred)/vary
+
+def compute_rmse(predictions, real_values):
+    assert np.all(predictions.shape == real_values.shape)
+    mse = np.mean(np.square(predictions - real_values))
+    rmse = np.sqrt(mse)
+    print("RMSE = {}".format(rmse))
+    return rmse
+
+def compute_highest_regression_errors(predictions, real_values, n_errors=20):
+    """
+    Compute the indexes with highest error
+    """
+    assert np.all(predictions.shape == real_values.shape)
+    sq_res = np.square(predictions - real_values)
+    highest_errors = sq_res.argsort()[-n_errors:][::-1]
+    return highest_errors
+
+def write_to_file(dictionary, fname):
+    """
+    Writes everything is in a dictionary in json model.
+    """
+    with open(fname, "w") as f:
+        json.dump(dictionary,f)
+        print("Written file {}".format(fname))
+
+def random_classification_baseline(real_values):
+    """
+    Randomly assigns half of the labels to class 0, and the other half to class 1
+    """
+    return [randint(0,1) for p in range(real_values.shape[0])]
+
+def evaluate_classification(pred_prob, pred_labels, real_labels, fname):
+    ave_accuracy = metrics.accuracy_score(real_labels, pred_labels)
+    print('Average accuracy = ', ave_accuracy)
+    precision = metrics.precision_score(real_labels, pred_labels)
+    print('Precision = ', precision)
+    recall = metrics.precision_score(real_labels, pred_labels)
+    print('Recall = ', recall)
+    f_score = metrics.f1_score(real_labels, pred_labels)
+    print('F1-score = ', f_score)
+    highest_errors = compute_highest_classification_errors(pred_prob, real_labels,
+            n_errors=20)
+    dictionary = {"ave_accuracy": ave_accuracy.tolist(), "precision": precision.tolist(),
+                  "recall": recall.tolist(), "f_score": f_score.tolist(),
+                  "highest_errors": highest_errors.tolist()}
+    write_to_file(dictionary, fname)
+
+def compute_highest_classification_errors(predictions, real_values, n_errors=20):
+    """
+    Compute the indexes with highest error
+    """
+    assert np.all(predictions.shape == real_values.shape)
+    dist = abs(predictions - real_values)
+    highest_errors = dist.argsort()[-n_errors:][::-1]
+    return highest_errors
 
 
 if __name__ == '__main__':
-    dronet = getModel((416, 416), 3, 1, "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/models/dronet_trained_ep50.pth")
+    weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test1_RGB/weights_199.pth"
+    dronet = getModel((200, 200), 3, 1, weights_path)
+    print(dronet)
     dronet = dronet.eval().cuda()
-
-    adv_patch_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet_result_patch/20220427-14:34:44_True_steer-0_coll-0_2.png"
-    adv_patch = Image.open(adv_patch_path).convert("RGB")
-    # tf = transforms.Resize(300, 300)
-    # adv_patch = tf(adv_patch)
-    tf = transforms.ToTensor()
-    adv_patch = tf(adv_patch)
-    adv_patch = adv_patch.cuda()
-
-
     with torch.no_grad():
-        testModel(dronet, adv_patch)
+        testModel(dronet)

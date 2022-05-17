@@ -9,6 +9,34 @@ import onnx
 from onnx import backend
 # import onnx_tensorrt.backend as backend
 
+def getModel(img_dims, img_channels, output_dim, weights_path):
+    '''
+    Initialize model.
+
+    ## Arguments
+
+        `img_dims`: Target image dimensions.
+
+        `img_channels`: Target image channels.
+
+        `output_dim`: Dimension of model output.
+
+        `weights_path`: Path to pre-trained model.
+
+    ## Returns
+        `model`: the pytorch model
+    '''
+    model = DronetTorch(img_dims, img_channels, output_dim)
+    # if weights path exists...
+    if weights_path:
+        try:
+            model.load_state_dict(torch.load(weights_path))
+            print("Loaded model from {}".format(weights_path))
+        except:
+            print("Impossible to find weight path. Returning untrained model")
+
+    return model
+
 
 # dronet implementation in pytorch.
 class DronetTorch(nn.Module):

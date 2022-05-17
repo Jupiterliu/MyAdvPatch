@@ -9,7 +9,6 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 from PIL import Image, ImageDraw
 from utils import *
-from darknet import *
 from load_data import PatchTransformer, PatchApplier, InriaDataset
 import json
 

@@ -12,8 +12,6 @@ import imghdr # get_image_size
 
 import matplotlib.pyplot as plt
 
-from keras.models import model_from_json
-
 def sigmoid(x):
     return 1.0/(math.exp(-x)+1.)
 
@@ -454,13 +452,3 @@ def save_images_from_Tesnor(Tensor, epoch):  # Tensor has CxHxW(3D) shape
     plt.axis("off")
     plt.savefig("patch-epoch" + str(epoch+1) + ".jpg")
     print("The latest patch has been saved!")
-
-
-def jsonToModel(json_model_path):
-    with open(json_model_path, 'r') as json_file:
-        loaded_model_json = json_file.read()
-
-    model = model_from_json(loaded_model_json)
-
-    return model
-

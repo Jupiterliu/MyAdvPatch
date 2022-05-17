@@ -10,18 +10,19 @@ class BaseConfig(object):
         """
         Set the defaults.
         """
-        self.img_dir = "/root/Python_Program_Remote/FASC/INRIAPerson/Train/pos"
-        self.lab_dir = "/root/Python_Program_Remote/FASC/INRIAPerson/Train/pos/yolo-labels"
-        self.cfgfile = "cfg/yolo.cfg"
+        self.training_dir = "/root/Python_Program_Remote/MyAdvPatch/datasets_png/training"
+        self.validation_dir = "/root/Python_Program_Remote/MyAdvPatch/datasets_png/validation"
+        self.testing_dir = "/root/Python_Program_Remote/MyAdvPatch/datasets_png/testing"
         self.weightfile = "weights/yolo.weights"
         self.printfile = "non_printability/30values.txt"
         self.patch_size = 300
+        self.image_size = 416
 
         self.start_learning_rate = 0.03
 
         self.patch_name = 'base'
 
-        self.scheduler_factory = lambda x: optim.lr_scheduler.ReduceLROnPlateau(x, 'min', patience=50)  # 通过降低网络的学习率来提高网络性能
+        self.scheduler_factory = lambda x: optim.lr_scheduler.ReduceLROnPlateau(x, 'min', patience=50)
         self.max_tv = 0
 
         self.batch_size = 20
@@ -36,8 +37,17 @@ class PhysicalPatch(BaseConfig):
     def __init__(self):
         super().__init__()
 
+        self.n_epochs = 500
         self.batch_size = 16
+        self.k = 8   # hard-mining
+        self.num_workers = 10
+
         self.patch_size = 100
+        self.image_size = 200
+
+        self.is_targeted = True  # False
+        self.steer_target = 0.
+        self.coll_target = 0.
 
         self.patch_name = 'PhysicalAttack'
         self.max_tv = 0.165
