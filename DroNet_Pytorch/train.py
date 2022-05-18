@@ -79,7 +79,7 @@ def trainModel(model: dronet_torch.DronetTorch, epochs, batch_size, steps_save, 
             # get loss, perform hard mining
             steer_true = steer_true.squeeze(1).to(model.device)
             coll_true = coll_true.squeeze(1).to(model.device)
-            loss = model.loss(k, steer_true, steer_pred, coll_true, coll_pred)
+            loss = model.loss(k, steer_true, steer_pred, coll_true, coll_pred, use_old_loss = True)
             # backpropagate loss
             loss.backward()
             # optimizer step
@@ -94,7 +94,7 @@ def trainModel(model: dronet_torch.DronetTorch, epochs, batch_size, steps_save, 
         if epoch % steps_save == 0:
             print('Saving results...')
 
-            weights_path = os.path.join('saved_models', 'test5_RGB_new_loss_500epochs', f'weights_{epoch:03d}.pth')
+            weights_path = os.path.join('saved_models', 'test3_RGB_old_loss_500', f'weights_{epoch:03d}.pth')
             torch.save(model.state_dict(), weights_path)
         # evaluate on validation set
         for batch_idx, (img, steer_true, coll_true) in tqdm(enumerate(validation_dataloader),
@@ -114,11 +114,7 @@ def trainModel(model: dronet_torch.DronetTorch, epochs, batch_size, steps_save, 
         epoch_loss[epoch, 1] = validation_loss
         # Save training and validation losses.
     # save final results
-    # weights_path = os.path.join('models', 'dronet_trained_ep.pth')
-    # torch.save(model.state_dict(), weights_path)
-    # model_path = os.path.join("models", "final_whole_model_ep.pth")
-    # torch.save(model, model_path)
-    np.savetxt(os.path.join('saved_models', 'test5_RGB_new_loss_500epochs', 'losses.txt'), epoch_loss)
+    np.savetxt(os.path.join('saved_models', 'test3_RGB_old_loss_500', 'losses.txt'), epoch_loss)
 
 
 

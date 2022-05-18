@@ -1,7 +1,11 @@
 import torch
-from load_datasets import DronetDataset
-from dronet_torch import DronetTorch
-from dronet_torch import getModel
+from DroNet_Pytorch.load_datasets import DronetDataset
+from DroNet_Pytorch.dronet_torch import DronetTorch
+from DroNet_Pytorch.dronet_torch import getModel
+from load_data import *
+import torch.nn.functional as F
+from PIL import Image, ImageDraw
+from tqdm import tqdm
 import sklearn
 import re
 import os
@@ -11,7 +15,7 @@ from sklearn import metrics
 import json
 
 
-def testModel(model):
+def testModel(model, testing_dataloader, test_path, eval_path, is_patch_test, adv_patch):
     '''
     tests the model with the following metrics:
 
@@ -31,24 +35,28 @@ def testModel(model):
     the weights from the trained model. No use in keeping it at the default of `None`,
     and having (very, very, very likely) horrible metrics.
     '''
-
-    testing_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'testing',
-                                    augmentation=False)
-
-    testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=16,
-                                                     shuffle=True, num_workers=10)
     # go through all values
+    patch_applier = PatchApplier().cuda()
+    patch_transformer = PatchTransformer().cuda()
+
     all_true_steer = torch.cuda.FloatTensor()
     all_true_coll = torch.cuda.FloatTensor()
     all_pred_steer = torch.cuda.FloatTensor()
     all_pred_coll = torch.cuda.FloatTensor()
     all_exp_type = torch.cuda.FloatTensor()
 
-    for idx, (img, steer_true, coll_true) in enumerate(testing_dataloader):
+    for idx, (img, steer_true, coll_true) in tqdm(enumerate(testing_dataloader), desc=f'Running epoch {0}', total=len(testing_dataloader)):
         img_cuda = img.cuda()
         true_steer = steer_true.squeeze(1).cuda()[:, 1]
         true_coll = coll_true.squeeze(1).cuda()[:, 1]
         exp_type = steer_true.squeeze(1).cuda()[:, 0]
+        # patch testing
+        if is_patch_test:
+            # patch projection
+            adv_batch_t = patch_transformer(adv_patch, steer_true, 200, do_rotate=True, rand_loc=True)
+            p_img_batch = patch_applier(img_cuda, adv_batch_t)
+            img_cuda = F.interpolate(p_img_batch, (200, 200))  # Up or Down sample
+
         steer_pred, coll_pred = model(img_cuda)
         pred_steer = steer_pred.squeeze(-1)
         pred_coll = coll_pred.squeeze(-1)
@@ -80,15 +88,14 @@ def testModel(model):
                     'constant_regression.json': constant_steerings}
 
     # Evaluate predictions: EVA, residuals, and highest errors
-    paths = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test5_RGB_new_loss_500epochs"
     for fname, pred in dict_fname.items():
-        abs_fname = os.path.join(paths, "evaluation", fname)
+        abs_fname = os.path.join(test_path, eval_path, fname)
         evaluate_regression(pred, real_steerings, abs_fname)
 
     # Write predicted and real steerings
     dict_test = {'pred_steerings': pred_steerings.tolist(),
                     'real_steerings': real_steerings.tolist()}
-    write_to_file(dict_test, os.path.join(paths, "evaluation", 'predicted_and_real_steerings.json'))
+    write_to_file(dict_test, os.path.join(test_path, eval_path, 'predicted_and_real_steerings.json'))
 
     # *********************** Collision evaluation ****************************
     # Predicted probabilities and real labels
@@ -106,12 +113,12 @@ def testModel(model):
 
     # Evaluate predictions: accuracy, precision, recall, F1-score, and highest errors
     for fname, pred in dict_fname.items():
-        abs_fname = os.path.join(paths, "evaluation", fname)
+        abs_fname = os.path.join(test_path, eval_path, fname)
         evaluate_classification(pred_collisions, pred, real_labels, abs_fname)
 
     # Write predicted probabilities and real labels
     dict_test = {'pred_probabilities': pred_collisions.tolist(), 'real_labels': real_labels.tolist()}
-    write_to_file(dict_test, os.path.join(paths, "evaluation", 'predicted_and_real_labels.json'))
+    write_to_file(dict_test, os.path.join(test_path, eval_path, 'predicted_and_real_labels.json'))
 
 def random_regression_baseline(real_values):
     mean = np.mean(real_values)
@@ -206,9 +213,28 @@ def compute_highest_classification_errors(predictions, real_values, n_errors=20)
 
 
 if __name__ == '__main__':
-    weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test5_RGB_new_loss_500epochs/weights_205.pth"
+    weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test1_RGB_old_loss_200_nice/weights_199.pth"
     dronet = getModel((200, 200), 3, 1, weights_path)
     print(dronet)
     dronet = dronet.eval().cuda()
+
+    # Load testing data
+    testing_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'testing',
+                                    augmentation=False)
+    testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=16,
+                                                     shuffle=True, num_workers=10)
+
+    test_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test1_RGB_old_loss_200_nice"
+    eval_path = "evaluation"
+    folder = os.path.exists(os.path.join(test_path, eval_path))
+    if not folder:
+        os.makedirs(os.path.join(test_path, eval_path))
+
+    patchfile = "/root/Python_Program_Remote/MyAdvPatch/DroNet_patch/test2_random_scale/20220517-231221_steer-0.0_coll-0.0_99.png"
+    adv_patch = Image.open(patchfile).convert('RGB')
+    adv_patch = transforms.ToTensor()(adv_patch).cuda()
+
+    is_patch_test = False
+
     with torch.no_grad():
-        testModel(dronet)
+        testModel(dronet, testing_dataloader, test_path, eval_path, is_patch_test, adv_patch)

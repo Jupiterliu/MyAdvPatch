@@ -155,7 +155,7 @@ class DronetTorch(nn.Module):
 
         return steer, collision
 
-    def loss(self, k, steer_true, steer_pred, coll_true, coll_pred):
+    def loss(self, k, steer_true, steer_pred, coll_true, coll_pred, use_old_loss = False):
         '''
         loss function for dronet. Is a weighted sum of hard mined mean square
         error and hard mined binary cross entropy.
@@ -177,14 +177,20 @@ class DronetTorch(nn.Module):
         `coll_pred`: `Tensor`: the torch tensor for the predicted probabilities of collision.
         Is of shape `(N,1)`
         '''
-        # for steering angle
-        # mse_loss = self.hard_mining_mse(k, steer_true, steer_pred)
-        mse_loss = self.hard_mining_mse(k, steer_true, steer_pred)
-        # for collision probability
-        # bce_loss = self.beta * (self.hard_mining_entropy(k, coll_true, coll_pred))
-        bce_loss = self.beta * (self.hard_mining_entropy(k, coll_true, coll_pred))
-        # print("Total Loss: ", mse_loss.item() + bce_loss.item(),  "MSE Loss: ", mse_loss.item(), "BCE Loss: ", bce_loss.item())
-        return mse_loss + bce_loss
+        if use_old_loss:
+            # for steering angle
+            mse_loss = self.old_hard_mining_mse(k, steer_true, steer_pred)
+            # for collision probability
+            bce_loss = self.beta * (self.old_hard_mining_entropy(k, coll_true, coll_pred))
+            # print("Total Loss: ", mse_loss.item() + bce_loss.item(),  "MSE Loss: ", mse_loss.item(), "BCE Loss: ", bce_loss.item())
+            return mse_loss + bce_loss
+        else:
+            # for steering angle
+            mse_loss = self.hard_mining_mse(k, steer_true, steer_pred)
+            # for collision probability
+            bce_loss = self.beta * (self.hard_mining_entropy(k, coll_true, coll_pred))
+            # print("Total Loss: ", mse_loss.item() + bce_loss.item(),  "MSE Loss: ", mse_loss.item(), "BCE Loss: ", bce_loss.item())
+            return mse_loss + bce_loss
 
     def hard_mining_mse(self, k, y_true, y_pred):
         '''
@@ -249,6 +255,27 @@ class DronetTorch(nn.Module):
             hard_loss_coll = torch.div(torch.sum(max_loss_coll), k_min)
             return hard_loss_coll
 
+    def old_hard_mining_mse(self, k, y_true, y_pred):
+        y_true = y_true[:, 1].unsqueeze(-1)
+        loss_steer = (y_true - y_pred) ** 2
+        # hard mining
+        # get value of k that is minimum of batch size or the selected value of k
+        k_min = min(k, y_true.shape[0])
+        _, indices = torch.topk(loss_steer, k=k_min, dim=0)
+        max_loss_steer = torch.gather(loss_steer, dim=0, index=indices)
+        # mean square error
+        hard_loss_steer = torch.div(torch.sum(max_loss_steer), k_min)
+        return hard_loss_steer
+
+    def old_hard_mining_entropy(self, k, y_true, y_pred):
+        y_true = y_true[:, 1].unsqueeze(-1)
+        loss_coll = F.binary_cross_entropy(y_pred, y_true, reduction='none')
+        k_min = min(k, y_true.shape[0])
+        _, indices = torch.topk(loss_coll, k=k_min, dim=0)
+        max_loss_coll = torch.gather(loss_coll, dim=0, index=indices)
+        hard_loss_coll = torch.div(torch.sum(max_loss_coll), k_min)
+        return hard_loss_coll
+
 class DronetOnnx():
     def __init__(self, img_dims, img_channels, output_dim, verbose=False):
         super(DronetOnnx).__init__()
@@ -275,11 +302,3 @@ class DronetOnnx():
             print(f'Steering Angle: {steer[0]} radians')
             print(f'Collision Prob: {coll[0]}')
         return steer, coll
-
-# one dim for steering angle, another for prob. of collision
-# dronet = DronetTorch(img_dims=(416,416), img_channels=3, output_dim=1)
-# dronet.cuda()
-# steer_true = torch.Tensor([[0.1], [0.1], [0.1], [0.1]]).cuda()
-# coll_true = torch.Tensor([[0.1], [0.1], [0.1], [0.1]]).cuda()
-# m = torch.ones((16, 1, 3, 416, 416)).cuda()
-# steer_pred, coll_pred = dronet(m)

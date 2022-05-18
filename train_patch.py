@@ -1,5 +1,5 @@
 """
-Training code for Adversarial patch training
+Training code for Physical Adversarial patch Attack
 """
 
 import PIL
