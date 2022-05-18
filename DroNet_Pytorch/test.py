@@ -70,8 +70,15 @@ def testModel(model, testing_dataloader, test_path, eval_path, is_patch_test, ad
         all_pred_coll = torch.cat((all_pred_coll, pred_coll))
         all_exp_type = torch.cat((all_exp_type, exp_type))
 
+    # Saving all steer and coll to txt
+    steer = torch.cat((all_true_steer.unsqueeze(-1), all_pred_steer.unsqueeze(-1)), 1)
+    coll = torch.cat((all_true_coll.unsqueeze(-1), all_pred_coll.unsqueeze(-1)), 1)
+
     # Param t. t=1 steering, t=0 collision
     t_mask = all_exp_type == 1
+
+    np.savetxt(os.path.join(test_path, eval_path, 'steerings.txt'), steer[t_mask, ].cpu().numpy(), fmt="%f", delimiter=",")
+    np.savetxt(os.path.join(test_path, eval_path, 'collision.txt'), coll[~t_mask, ].cpu().numpy(), fmt="%f", delimiter=",")
 
     # ************************* Steering evaluation ***************************
     # Predicted and real steerings

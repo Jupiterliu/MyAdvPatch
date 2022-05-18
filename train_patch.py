@@ -105,7 +105,8 @@ class PatchTrainer(object):
 
                     # Cal 3 Losses from true and pred
                     attack_loss = self.attack_loss(self.config.k, steer_true, steer_pred, coll_true, coll_pred,
-                                                    self.config.steer_target, self.config.coll_target, self.config.is_targeted)
+                                                    self.config.steer_target, self.config.coll_target,
+                                                    self.config.is_targeted, self.config.use_old_loss)
                     nps = self.nps_loss(adv_patch)
                     tv = self.tv_loss(adv_patch)
                     # pnorm = self.pnorm_loss(adv_patch, p_img_batch)
@@ -150,7 +151,7 @@ class PatchTrainer(object):
 
             im = transforms.ToPILImage('RGB')(adv_patch_cpu)
             plt.imshow(im)
-            im.save(f'DroNet_patch/test2_random_scale/{time_str}_steer-{self.config.steer_target}_coll-{self.config.coll_target}_{epoch}.png')
+            im.save(f'DroNet_patch/test3/{time_str}_steer-{self.config.steer_target}_coll-{self.config.coll_target}_{epoch}.png')
 
             scheduler.step(ep_loss)
             if True:

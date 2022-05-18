@@ -6,7 +6,7 @@ Dronet is implemented by Keras/Tensorflow, but we here recurrence it by Pytorch 
 
 # What you need
 ## Environments
-Our python is 3.6, and you can meet the environments by running:
+The python is 3.6, and you can meet the environments by running:
 ```
 pip install -r requirements.txt
 ```
@@ -19,7 +19,11 @@ Udacity dataset(Steering data): https://github.com/udacity/self-driving-car/tree
 Collision data: http://rpg.ifi.uzh.ch/data/collision.zip
 
 # Generating a patch
-`patch_config.py` contains configuration of different experiments. You can design your own experiment by inheriting from the base `BaseConfig` class or an existing experiment.
+`patch_config.py` contains configuration of different experiments. 
+
+You can design your own experiment by inheriting from the base `BaseConfig` class or an existing experiment.
+
+Here we create a exp-env named `test2_random_scale`.
 
 You can generate a physical patch by running:
 ```
@@ -27,10 +31,10 @@ python train_patch.py test2_random_scale
 ```
 You also can evaluate the attacking effect of a generated patch by running:
 ```
-...
+python test_patch.py
 ```
 # Implement Attack 
-You can attack a Dronet-based UAV both in SITL(Sofeware in the Loop) and HITL(Hardware in the Loop)
+You can attack a Dronet-based UAV both in SITL(Sofeware in the Loop) and HITL(Hardware in the Loop).
 ## SITL
 UAV simulation device: Parrot Bebop2
 ## HITL

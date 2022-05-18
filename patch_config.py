@@ -46,8 +46,9 @@ class PhysicalPatch(BaseConfig):
         self.image_size = 200
 
         self.is_targeted = True  # False
-        self.steer_target = 0.
+        self.steer_target = 0.5
         self.coll_target = 0.
+        self.use_old_loss = True  # False
 
         self.patch_name = 'PhysicalAttack'
         self.max_tv = 0.165

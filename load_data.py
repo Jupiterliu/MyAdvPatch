@@ -30,33 +30,39 @@ class Attack_Loss(nn.Module):
         super(Attack_Loss, self).__init__()
         self.beta = torch.Tensor([0]).float().cuda()
         
-    def forward(self, k, steer_true, steer_pred, coll_true, coll_pred, steer_target, coll_target, is_targted):
+    def forward(self, k, steer_true, steer_pred, coll_true, coll_pred, steer_target, coll_target, is_targted, use_old_loss):
         # Targeted:
         # Non-Targeted:
         if is_targted:
-            attack_loss = self.targeted_attack_loss(k, steer_true, steer_pred, coll_true, coll_pred, steer_target, coll_target)
+            attack_loss = self.targeted_attack_loss(k, steer_true, steer_pred, coll_true, coll_pred, steer_target, coll_target, use_old_loss)
         else:
-            attack_loss = self.untargeted_attack_loss(k, steer_true, steer_pred, coll_true, coll_pred)
+            attack_loss = self.untargeted_attack_loss(k, steer_true, steer_pred, coll_true, coll_pred, use_old_loss)
         return attack_loss
 
-    def targeted_attack_loss(self, k, steer_true, steer_pred, coll_true, coll_pred, steer_target, coll_target):
-        # Steer angle
-        # steer_target = torch.cuda.FloatTensor(torch.Size((steer_true.size(0), 1))).fill_(steer_target)
-        balance_steer = 1
-        balance_coll = 1
+    def targeted_attack_loss(self, k, steer_true, steer_pred, coll_true, coll_pred, steer_target, coll_target, use_old_loss):
+        # Steer angle: steer_target = torch.cuda.FloatTensor(torch.Size((steer_true.size(0), 1))).fill_(steer_target)
+        balance_steer = 5
+        balance_coll = 5
         target_steer = steer_true.clone()
         target_steer[:, 1] = steer_target
-        loss1 = self.hard_mining_mse(k, steer_true, steer_pred)
-        loss2 = self.hard_mining_mse(k, target_steer, steer_pred)
-        # collision
-        # coll_target = torch.cuda.FloatTensor(torch.Size((coll_true.size(0), 1))).fill_(coll_target)
         target_coll = steer_true.clone()
         target_coll[:, 1] = coll_target
-        loss3 = self.hard_mining_entropy(k, coll_true, coll_pred)
-        loss4 = self.hard_mining_entropy(k, target_coll, coll_pred)
-        return torch.mean((-loss1 + balance_steer * loss2) + (-loss3 + balance_coll* loss4))
+        if use_old_loss:
+            loss1 = self.old_hard_mining_mse(k, steer_true, steer_pred)
+            loss2 = self.old_hard_mining_mse(k, target_steer, steer_pred)
+            # collision: coll_target = torch.cuda.FloatTensor(torch.Size((coll_true.size(0), 1))).fill_(coll_target)
+            loss3 = self.old_hard_mining_entropy(k, coll_true, coll_pred)
+            loss4 = self.old_hard_mining_entropy(k, target_coll, coll_pred)
+            return torch.mean((-loss1 + balance_steer * loss2) + (-loss3 + balance_coll* loss4))
+        else:
+            loss1 = self.hard_mining_mse(k, steer_true, steer_pred)
+            loss2 = self.hard_mining_mse(k, target_steer, steer_pred)
+            # collision: coll_target = torch.cuda.FloatTensor(torch.Size((coll_true.size(0), 1))).fill_(coll_target)
+            loss3 = self.hard_mining_entropy(k, coll_true, coll_pred)
+            loss4 = self.hard_mining_entropy(k, target_coll, coll_pred)
+            return torch.mean((-loss1 + balance_steer * loss2) + (-loss3 + balance_coll * loss4))
 
-    def untargeted_attack_loss(self, k, steer_true, steer_pred, coll_true, coll_pred):
+    def untargeted_attack_loss(self, k, steer_true, steer_pred, coll_true, coll_pred, use_old_loss):
         # for steering angle
         mse_loss = self.hard_mining_mse(k, steer_true, steer_pred)
         # for collision probability
@@ -100,6 +106,27 @@ class Attack_Loss(nn.Module):
             hard_loss_coll = torch.div(torch.sum(max_loss_coll), k_min)
             return hard_loss_coll
 
+    def old_hard_mining_mse(self, k, y_true, y_pred):
+        y_true = y_true[:, 1].unsqueeze(-1)
+        loss_steer = (y_true - y_pred) ** 2
+        # hard mining
+        # get value of k that is minimum of batch size or the selected value of k
+        k_min = min(k, y_true.shape[0])
+        _, indices = torch.topk(loss_steer, k=k_min, dim=0)
+        max_loss_steer = torch.gather(loss_steer, dim=0, index=indices)
+        # mean square error
+        hard_loss_steer = torch.div(torch.sum(max_loss_steer), k_min)
+        return hard_loss_steer
+
+    def old_hard_mining_entropy(self, k, y_true, y_pred):
+        y_true = y_true[:, 1].unsqueeze(-1)
+        loss_coll = F.binary_cross_entropy(y_pred, y_true, reduction='none')
+        k_min = min(k, y_true.shape[0])
+        _, indices = torch.topk(loss_coll, k=k_min, dim=0)
+        max_loss_coll = torch.gather(loss_coll, dim=0, index=indices)
+        hard_loss_coll = torch.div(torch.sum(max_loss_coll), k_min)
+        return hard_loss_coll
+
 class PNorm_Loss(nn.Module):
     """
 
@@ -108,7 +135,7 @@ class PNorm_Loss(nn.Module):
         super(PNorm_Loss, self).__init__()
 
     def forward(self, adv_patch, patched_img):
-        return adv_patch
+        pass
 
 class NPS_Loss(nn.Module):
     """NMSCalculator: calculates the non-printability score of a patch.
@@ -265,9 +292,9 @@ class PatchTransformer(nn.Module):
         targetoff_x = torch.cuda.FloatTensor([0.13357515633106232])
         targetoff_y = torch.cuda.FloatTensor([0.5612906217575073])
         if (rand_loc):
-            off_x = targetoff_x * (torch.cuda.FloatTensor(targetoff_x.size()).uniform_(-0.4, 0.4))
+            off_x = targetoff_x * (torch.cuda.FloatTensor(targetoff_x.size()).uniform_(-1., 1.))
             target_x = target_x + off_x
-            off_y = targetoff_y * (torch.cuda.FloatTensor(targetoff_y.size()).uniform_(-0.4, 0.4))
+            off_y = targetoff_y * (torch.cuda.FloatTensor(targetoff_y.size()).uniform_(-1., 1.))
             target_y = target_y + off_y
         target_y = target_y - 0.05
 
@@ -317,124 +344,6 @@ class PatchApplier(nn.Module):
             img_batch = torch.where((adv == 0), img_batch, adv)
         return img_batch
 
-'''
-class PatchGenerator(nn.Module):
-    """PatchGenerator: network module that generates adversarial patches.
-
-    Module representing the neural network that will generate adversarial patches.
-
-    """
-
-    def __init__(self, cfgfile, weightfile, img_dir, lab_dir):
-        super(PatchGenerator, self).__init__()
-        self.yolo = Darknet(cfgfile).load_weights(weightfile)
-        self.dataloader = torch.utils.data.DataLoader(InriaDataset(img_dir, lab_dir, shuffle=True),
-                                                      batch_size=5,
-                                                      shuffle=True)
-        self.patchapplier = PatchApplier()
-        self.nmscalculator = NMSCalculator()
-        self.totalvariation = TotalVariation()
-
-    def forward(self, *input):
-        pass
-'''
-
-class InriaDataset(Dataset):
-    """InriaDataset: representation of the INRIA person dataset.
-
-    Internal representation of the commonly used INRIA person dataset.
-    Available at: http://pascal.inrialpes.fr/data/human/
-
-    Attributes:
-        len: An integer number of elements in the
-        img_dir: Directory containing the images of the INRIA dataset.
-        lab_dir: Directory containing the labels of the INRIA dataset.
-        img_names: List of all image file names in img_dir.
-        shuffle: Whether or not to shuffle the dataset.
-
-    """
-
-    def __init__(self, img_dir, lab_dir, max_lab, imgsize, shuffle=True):
-        n_png_images = len(fnmatch.filter(os.listdir(img_dir), '*.png'))
-        n_jpg_images = len(fnmatch.filter(os.listdir(img_dir), '*.jpg'))
-        n_images = n_png_images + n_jpg_images
-        n_labels = len(fnmatch.filter(os.listdir(lab_dir), '*.txt'))
-        assert n_images == n_labels, "Number of images and number of labels don't match"
-        self.len = n_images
-        self.img_dir = img_dir
-        self.lab_dir = lab_dir
-        self.imgsize = imgsize
-        self.img_names = fnmatch.filter(os.listdir(img_dir), '*.png') + fnmatch.filter(os.listdir(img_dir), '*.jpg')
-        self.shuffle = shuffle
-        self.img_paths = []
-        for img_name in self.img_names:
-            self.img_paths.append(os.path.join(self.img_dir, img_name))
-        self.lab_paths = []
-        for img_name in self.img_names:
-            lab_path = os.path.join(self.lab_dir, img_name).replace('.jpg', '.txt').replace('.png', '.txt')
-            self.lab_paths.append(lab_path)
-        self.max_n_labels = max_lab
-
-    def __len__(self):
-        return self.len
-
-    def __getitem__(self, idx):
-        assert idx <= len(self), 'index range error'
-        img_path = os.path.join(self.img_dir, self.img_names[idx])
-        lab_path = os.path.join(self.lab_dir, self.img_names[idx]).replace('.jpg', '.txt').replace('.png', '.txt')
-        image = Image.open(img_path).convert('RGB')
-        if os.path.getsize(lab_path):       #check to see if label file contains data. 
-            label = np.loadtxt(lab_path)
-        else:
-            label = np.ones([5])
-
-        label = torch.from_numpy(label).float()
-        if label.dim() == 1:
-            label = label.unsqueeze(0)
-
-        image, label = self.pad_and_scale(image, label)
-        transform = transforms.ToTensor()
-        image = transform(image)
-        label = self.pad_lab(label)
-        return image, label
-
-    def pad_and_scale(self, img, lab):
-        """
-
-        Args:
-            img:
-
-        Returns:
-
-        """
-        w,h = img.size
-        if w==h:
-            padded_img = img
-        else:
-            dim_to_pad = 1 if w<h else 2
-            if dim_to_pad == 1:
-                padding = (h - w) / 2
-                padded_img = Image.new('RGB', (h,h), color=(127,127,127))
-                padded_img.paste(img, (int(padding), 0))
-                lab[:, [1]] = (lab[:, [1]] * w + padding) / h
-                lab[:, [3]] = (lab[:, [3]] * w / h)
-            else:
-                padding = (w - h) / 2
-                padded_img = Image.new('RGB', (w, w), color=(127,127,127))
-                padded_img.paste(img, (0, int(padding)))
-                lab[:, [2]] = (lab[:, [2]] * h + padding) / w
-                lab[:, [4]] = (lab[:, [4]] * h  / w)
-        resize = transforms.Resize((self.imgsize,self.imgsize))
-        padded_img = resize(padded_img)     #choose here
-        return padded_img, lab
-
-    def pad_lab(self, lab):
-        pad_size = self.max_n_labels - lab.shape[0]
-        if(pad_size>0):
-            padded_lab = F.pad(lab, (0, 0, 0, pad_size), value=1)
-        else:
-            padded_lab = lab
-        return padded_lab
 
 if __name__ == '__main__':
     if len(sys.argv) == 3:

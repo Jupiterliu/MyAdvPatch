@@ -25,18 +25,18 @@ if __name__ == '__main__':
     dronet = dronet.eval().cuda()
 
     # Load testing data
-    testing_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'testing',
+    testing_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'training',
                                     augmentation=False)
     testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=16,
                                                      shuffle=True, num_workers=10)
 
     test_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test1_RGB_old_loss_200_nice"
-    eval_path = "patch_test2_random_scale10"
+    eval_path = "patch_test2_6"
     folder  = os.path.exists(os.path.join(test_path, eval_path))
     if not folder:
         os.makedirs(os.path.join(test_path, eval_path))
 
-    patchfile = "/root/Python_Program_Remote/MyAdvPatch/DroNet_patch/test2_random_scale/20220517-231221_steer-0.0_coll-0.0_10.png"
+    patchfile = "/root/Python_Program_Remote/MyAdvPatch/DroNet_patch/test3/20220518-152116_steer-0.5_coll-0.0_6.png"
     adv_patch = Image.open(patchfile).convert('RGB')
     adv_patch = transforms.ToTensor()(adv_patch).cuda()
 
