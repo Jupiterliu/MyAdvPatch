@@ -113,8 +113,9 @@ def trainModel(model: dronet_torch.DronetTorch, epochs, batch_size, steps_save, 
         epoch_loss[epoch, 0] = train_loss
         epoch_loss[epoch, 1] = validation_loss
         # Save training and validation losses.
+        np.savetxt(os.path.join('saved_models', 'test3_RGB_old_loss_500', 'losses.txt'), epoch_loss)
     # save final results
-    np.savetxt(os.path.join('saved_models', 'test3_RGB_old_loss_500', 'losses.txt'), epoch_loss)
+    #np.savetxt(os.path.join('saved_models', 'test3_RGB_old_loss_500', 'losses.txt'), epoch_loss)
 
 
 

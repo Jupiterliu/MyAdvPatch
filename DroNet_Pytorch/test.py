@@ -10,6 +10,8 @@ import sklearn
 import re
 import os
 import numpy as np
+np.set_printoptions(suppress=True)
+
 from random import randint
 from sklearn import metrics
 import json
@@ -53,7 +55,7 @@ def testModel(model, testing_dataloader, test_path, eval_path, is_patch_test, ad
         # patch testing
         if is_patch_test:
             # patch projection
-            adv_batch_t = patch_transformer(adv_patch, steer_true, 200, do_rotate=True, rand_loc=True)
+            adv_batch_t = patch_transformer(adv_patch, steer_true, 200, do_rotate=True, rand_loc=False)
             p_img_batch = patch_applier(img_cuda, adv_batch_t)
             img_cuda = F.interpolate(p_img_batch, (200, 200))  # Up or Down sample
 
@@ -77,8 +79,9 @@ def testModel(model, testing_dataloader, test_path, eval_path, is_patch_test, ad
     # Param t. t=1 steering, t=0 collision
     t_mask = all_exp_type == 1
 
-    np.savetxt(os.path.join(test_path, eval_path, 'steerings.txt'), steer[t_mask, ].cpu().numpy(), fmt="%f", delimiter=",")
-    np.savetxt(os.path.join(test_path, eval_path, 'collision.txt'), coll[~t_mask, ].cpu().numpy(), fmt="%f", delimiter=",")
+    coll = mul_columns_sort(coll[~t_mask, ].cpu().numpy())
+    np.savetxt(os.path.join(test_path, eval_path, 'steerings.txt'), steer[t_mask,].cpu().numpy(), fmt="%f", delimiter=",")
+    np.savetxt(os.path.join(test_path, eval_path, 'collision.txt'), coll, fmt="%f", delimiter=",")
 
     # ************************* Steering evaluation ***************************
     # Predicted and real steerings
@@ -218,26 +221,42 @@ def compute_highest_classification_errors(predictions, real_values, n_errors=20)
     highest_errors = dist.argsort()[-n_errors:][::-1]
     return highest_errors
 
+def totuple(a):
+    try:
+        return tuple(totuple(i) for i in a)
+    except TypeError:
+        return a
+
+def mul_columns_sort(data):
+    m2A = []
+    for i in range(0, len(data)):
+        m2A.append((data[i][0], data[i][1]))
+    dtype = [('x', float), ('y', float)]
+    tuple1 = np.array(m2A, dtype)
+    tuple1 = np.sort(tuple1, order=['x', 'y'])
+    print(tuple1.shape)
+    inFile = np.array(totuple(tuple1))
+    return inFile
+
 
 if __name__ == '__main__':
-    weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test1_RGB_old_loss_200_nice/weights_199.pth"
+    # weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test1_RGB_old_loss_200_nice/weights_199.pth"
+    weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test3_RGB_old_loss_500/weights_435.pth"
     dronet = getModel((200, 200), 3, 1, weights_path)
     print(dronet)
     dronet = dronet.eval().cuda()
 
     # Load testing data
-    testing_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'testing',
-                                    augmentation=False)
-    testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=16,
-                                                     shuffle=True, num_workers=10)
+    testing_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'testing', augmentation=False)
+    testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=16, shuffle=True, num_workers=10)
 
-    test_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test1_RGB_old_loss_200_nice"
-    eval_path = "evaluation"
+    test_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test3_RGB_old_loss_500"
+    eval_path = "evaluation_435"
     folder = os.path.exists(os.path.join(test_path, eval_path))
     if not folder:
         os.makedirs(os.path.join(test_path, eval_path))
 
-    patchfile = "/root/Python_Program_Remote/MyAdvPatch/DroNet_patch/test2_random_scale/20220517-231221_steer-0.0_coll-0.0_99.png"
+    patchfile = "/root/Python_Program_Remote/MyAdvPatch/DroNet_patch/test2_random_scale/20220517-231221_steer-0.0_coll-0.0_100.png"
     adv_patch = Image.open(patchfile).convert('RGB')
     adv_patch = transforms.ToTensor()(adv_patch).cuda()
 

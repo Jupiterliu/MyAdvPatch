@@ -30,16 +30,16 @@ class Attack_Loss(nn.Module):
         super(Attack_Loss, self).__init__()
         self.beta = torch.Tensor([0]).float().cuda()
         
-    def forward(self, k, steer_true, steer_pred, coll_true, coll_pred, steer_target, coll_target, is_targted, use_old_loss):
+    def forward(self, k, steer_true, steer_pred, coll_true, coll_pred, steer_target, coll_target, is_targted, use_old_loss, beta):
         # Targeted:
         # Non-Targeted:
         if is_targted:
-            attack_loss = self.targeted_attack_loss(k, steer_true, steer_pred, coll_true, coll_pred, steer_target, coll_target, use_old_loss)
+            attack_loss = self.targeted_attack_loss(k, steer_true, steer_pred, coll_true, coll_pred, steer_target, coll_target, use_old_loss, beta)
         else:
-            attack_loss = self.untargeted_attack_loss(k, steer_true, steer_pred, coll_true, coll_pred, use_old_loss)
+            attack_loss = self.untargeted_attack_loss(k, steer_true, steer_pred, coll_true, coll_pred, use_old_loss, beta)
         return attack_loss
 
-    def targeted_attack_loss(self, k, steer_true, steer_pred, coll_true, coll_pred, steer_target, coll_target, use_old_loss):
+    def targeted_attack_loss(self, k, steer_true, steer_pred, coll_true, coll_pred, steer_target, coll_target, use_old_loss, beta):
         # Steer angle: steer_target = torch.cuda.FloatTensor(torch.Size((steer_true.size(0), 1))).fill_(steer_target)
         balance_steer = 5
         balance_coll = 5
@@ -53,16 +53,16 @@ class Attack_Loss(nn.Module):
             # collision: coll_target = torch.cuda.FloatTensor(torch.Size((coll_true.size(0), 1))).fill_(coll_target)
             loss3 = self.old_hard_mining_entropy(k, coll_true, coll_pred)
             loss4 = self.old_hard_mining_entropy(k, target_coll, coll_pred)
-            return torch.mean((-loss1 + balance_steer * loss2) + (-loss3 + balance_coll* loss4))
+            return torch.mean((-loss1 + balance_steer * loss2) + beta * (-loss3 + balance_coll * loss4))
         else:
             loss1 = self.hard_mining_mse(k, steer_true, steer_pred)
             loss2 = self.hard_mining_mse(k, target_steer, steer_pred)
             # collision: coll_target = torch.cuda.FloatTensor(torch.Size((coll_true.size(0), 1))).fill_(coll_target)
             loss3 = self.hard_mining_entropy(k, coll_true, coll_pred)
             loss4 = self.hard_mining_entropy(k, target_coll, coll_pred)
-            return torch.mean((-loss1 + balance_steer * loss2) + (-loss3 + balance_coll * loss4))
+            return torch.mean((-loss1 + balance_steer * loss2) + beta * (-loss3 + balance_coll * loss4))
 
-    def untargeted_attack_loss(self, k, steer_true, steer_pred, coll_true, coll_pred, use_old_loss):
+    def untargeted_attack_loss(self, k, steer_true, steer_pred, coll_true, coll_pred, use_old_loss, beta):
         # for steering angle
         mse_loss = self.hard_mining_mse(k, steer_true, steer_pred)
         # for collision probability
@@ -223,8 +223,8 @@ class PatchTransformer(nn.Module):
         self.min_scale = 0.2  # Scale the patch size from (patch_size * min_scale) to (patch_size * max_scale)
         self.max_scale = 1.5
         self.noise_factor = 0.10
-        self.minangle = -20 / 180 * math.pi
-        self.maxangle = 20 / 180 * math.pi
+        self.minangle = -10 / 180 * math.pi
+        self.maxangle = 10 / 180 * math.pi
         self.medianpooler = MedianPool2d(7, same=True)
 
     def forward(self, adv_patch, steer_true, img_size, do_rotate=True, rand_loc=True):
@@ -292,9 +292,9 @@ class PatchTransformer(nn.Module):
         targetoff_x = torch.cuda.FloatTensor([0.13357515633106232])
         targetoff_y = torch.cuda.FloatTensor([0.5612906217575073])
         if (rand_loc):
-            off_x = targetoff_x * (torch.cuda.FloatTensor(targetoff_x.size()).uniform_(-1., 1.))
+            off_x = targetoff_x * (torch.cuda.FloatTensor(targetoff_x.size()).uniform_(-0.4, 0.4))
             target_x = target_x + off_x
-            off_y = targetoff_y * (torch.cuda.FloatTensor(targetoff_y.size()).uniform_(-1., 1.))
+            off_y = targetoff_y * (torch.cuda.FloatTensor(targetoff_y.size()).uniform_(-0.4, 0.4))
             target_y = target_y + off_y
         target_y = target_y - 0.05
 

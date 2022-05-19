@@ -84,6 +84,8 @@ class PatchTrainer(object):
             ep_tv_loss = 0
             ep_loss = 0
             bt0 = time.time()
+            other_val = (1 - torch.exp(torch.Tensor([-1 * (0.1) * (epoch - 10)]))).float().cuda()
+            beta = torch.max(torch.Tensor([0]).float().cuda(), other_val)
             for i_batch, (img_batch, steer_true, coll_true) in tqdm(enumerate(training_dataloader),
                                                                     desc=f'Running epoch {epoch}', total=self.epoch_length):
                 with autograd.detect_anomaly():
@@ -106,7 +108,8 @@ class PatchTrainer(object):
                     # Cal 3 Losses from true and pred
                     attack_loss = self.attack_loss(self.config.k, steer_true, steer_pred, coll_true, coll_pred,
                                                     self.config.steer_target, self.config.coll_target,
-                                                    self.config.is_targeted, self.config.use_old_loss)
+                                                    self.config.is_targeted, self.config.use_old_loss,
+                                                    beta)
                     nps = self.nps_loss(adv_patch)
                     tv = self.tv_loss(adv_patch)
                     # pnorm = self.pnorm_loss(adv_patch, p_img_batch)
@@ -114,7 +117,7 @@ class PatchTrainer(object):
                     # From the Loss weights to cal the total Loss
                     nps_loss = nps * 0.1     # 0.01
                     tv_loss = tv * 3.5    # 2.5
-                    loss = attack_loss + nps_loss + torch.max(tv_loss, torch.tensor(0.1).cuda())
+                    loss = attack_loss + torch.max(tv_loss, torch.tensor(0.1).cuda())  # + nps_loss
 
                     ep_attack_loss += attack_loss.detach().cpu().numpy()
                     ep_nps_loss += nps_loss.detach().cpu().numpy()
@@ -151,7 +154,7 @@ class PatchTrainer(object):
 
             im = transforms.ToPILImage('RGB')(adv_patch_cpu)
             plt.imshow(im)
-            im.save(f'DroNet_patch/test3/{time_str}_steer-{self.config.steer_target}_coll-{self.config.coll_target}_{epoch}.png')
+            im.save(f'DroNet_patch/test4_old_loss_beta/{time_str}_steer-{self.config.steer_target}_coll-{self.config.coll_target}_{epoch}.png')
 
             scheduler.step(ep_loss)
             if True:
