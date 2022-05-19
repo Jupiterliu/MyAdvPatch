@@ -99,15 +99,15 @@ class PatchTrainer(object):
                     # patch projection
                     # if self.config.image_mode == "gray":
                     #     adv_patch = transforms.Grayscale()(adv_patch)
-                    adv_batch_t = self.patch_transformer(adv_patch, steer_true, self.config.image_size, do_rotate=True, rand_loc=True)
+                    adv_batch_t = self.patch_transformer(adv_patch, steer_true, self.config.image_size, do_rotate=True, rand_loc=False)
                     p_img_batch = self.patch_applier(img_batch, adv_batch_t)
                     p_img_batch = F.interpolate(p_img_batch, (200, 200))  # Up or Down sample
 
-                    for i in range(p_img_batch.size(0)):
-                        Tensor = p_img_batch[i, :, :, :]
-                        image = np.transpose(Tensor.detach().cpu().numpy(), (1, 2, 0))
-                        plt.imshow(image)
-                        plt.show()
+                    # for i in range(p_img_batch.size(0)):
+                    #     Tensor = p_img_batch[i, :, :, :]
+                    #     image = np.transpose(Tensor.detach().cpu().numpy(), (1, 2, 0))
+                    #     plt.imshow(image)
+                    #     plt.show()
 
                     # Prediction
                     steer_pred, coll_pred = self.dronet_model(p_img_batch)

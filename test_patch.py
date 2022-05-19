@@ -19,24 +19,25 @@ from DroNet_Pytorch.test import *
 from DroNet_Pytorch.load_datasets import DronetDataset
 
 if __name__ == '__main__':
+    image_mode = "rgb"
     weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test1_RGB_old_loss_200_nice/weights_199.pth"
-    dronet = getModel((200, 200), 3, 1, weights_path)
-    print(dronet)
+    dronet = getModel((200, 200), image_mode, 1, weights_path)
+    # print(dronet)
     dronet = dronet.eval().cuda()
 
     # Load testing data
     testing_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'testing',
-                                    augmentation=False)
+                                    image_mode ,augmentation=False)
     testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=16,
                                                      shuffle=True, num_workers=10)
 
     test_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test1_RGB_old_loss_200_nice"
-    eval_path = "patch_test1_99"
+    eval_path = "patch_test4_26"
     folder  = os.path.exists(os.path.join(test_path, eval_path))
     if not folder:
         os.makedirs(os.path.join(test_path, eval_path))
 
-    patchfile = "/root/Python_Program_Remote/MyAdvPatch/DroNet_patch/test1_no_scale_resize_worked/20220516-10:55:01_True_steer-0_coll-0_99.png"
+    patchfile = "/root/Python_Program_Remote/MyAdvPatch/DroNet_patch/test4_old_loss_beta/20220519-122530_steer-0.0_coll-0.0_26.png"
     adv_patch = Image.open(patchfile).convert('RGB')
     adv_patch = transforms.ToTensor()(adv_patch).cuda()
 
