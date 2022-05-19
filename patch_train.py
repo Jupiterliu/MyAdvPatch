@@ -31,7 +31,7 @@ class PatchTrainer(object):
         self.config = patch_config.patch_configs[mode]()
 
         # Load DroNet model from .pth & eval()
-        weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/test1_RGB_old_loss_200_nice/weights_199.pth"
+        weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/test1_RGB_old_loss_200_nice/models/weights_199.pth"
         self.dronet_model = getModel((200, 200), self.config.image_mode, 1, weights_path)
         self.dronet_model = self.dronet_model.eval().cuda()
 
@@ -85,7 +85,7 @@ class PatchTrainer(object):
             ep_tv_loss = 0
             ep_loss = 0
             bt0 = time.time()
-            other_val = (1 - torch.exp(torch.Tensor([-1 * (0.1) * (epoch - 10)]))).float().cuda()
+            other_val = (1 - torch.exp(torch.Tensor([-1 * (0.1) * (epoch - 25)]))).float().cuda()
             beta = torch.max(torch.Tensor([0]).float().cuda(), other_val)
             for i_batch, (img_batch, steer_true, coll_true) in tqdm(enumerate(training_dataloader),
                                                                     desc=f'Running epoch {epoch}', total=self.epoch_length):
@@ -122,8 +122,8 @@ class PatchTrainer(object):
                     # pnorm = self.pnorm_loss(adv_patch, p_img_batch)
 
                     # From the Loss weights to cal the total Loss
-                    nps_loss = nps * 0.1     # 0.01
-                    tv_loss = tv * 3.5    # 2.5
+                    nps_loss = nps * 0.01     # 0.01
+                    tv_loss = tv * 2.5    # 2.5
                     loss = attack_loss + torch.max(tv_loss, torch.tensor(0.1).cuda())  # + nps_loss
 
                     ep_attack_loss += attack_loss.detach().cpu().numpy()
@@ -161,7 +161,7 @@ class PatchTrainer(object):
 
             im = transforms.ToPILImage('RGB')(adv_patch_cpu)
             plt.imshow(im)
-            im.save(f'DroNet_patch/test4_old_loss_beta/{time_str}_steer-{self.config.steer_target}_coll-{self.config.coll_target}_{epoch}.png')
+            im.save(f'/root/Python_Program_Remote/MyAdvPatch/saved_patch/test5_old_loss_beta-25/{time_str}_steer-{self.config.steer_target}_coll-{self.config.coll_target}_{epoch}.png')
 
             scheduler.step(ep_loss)
             if True:
