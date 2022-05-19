@@ -22,8 +22,8 @@ import sys
 import time
 
 # import DroNet_Pytorch.dronet_torch
-from DroNet_Pytorch.dronet_torch import getModel
-from DroNet_Pytorch.load_datasets import DronetDataset
+from DroNet_Pytorch.dronet_model import getModel
+from DroNet_Pytorch.dronet_load_datasets import DronetDataset
 
 class PatchTrainer(object):
     def __init__(self, mode):

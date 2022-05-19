@@ -15,8 +15,8 @@ from PIL import Image, ImageDraw
 from utils import *
 from load_data import PatchTransformer, PatchApplier
 import json
-from DroNet_Pytorch.test import *
-from DroNet_Pytorch.load_datasets import DronetDataset
+from DroNet_Pytorch.dronet_evaluate import *
+from DroNet_Pytorch.dronet_load_datasets import DronetDataset
 
 if __name__ == '__main__':
     image_mode = "rgb"
@@ -26,7 +26,7 @@ if __name__ == '__main__':
     dronet = dronet.eval().cuda()
 
     # Load testing data
-    testing_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'testing',
+    testing_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'training',
                                     image_mode ,augmentation=False)
     testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=16,
                                                      shuffle=True, num_workers=10)

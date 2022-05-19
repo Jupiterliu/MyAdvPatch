@@ -2,8 +2,8 @@ import sys
 import numpy as np
 import os
 
-from DroNet_Pytorch import dronet_torch
-from DroNet_Pytorch.load_datasets import DronetDataset
+from DroNet_Pytorch import dronet_model
+from DroNet_Pytorch.dronet_load_datasets import DronetDataset
 import matplotlib.pyplot as plt
 
 import torch

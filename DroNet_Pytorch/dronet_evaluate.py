@@ -1,7 +1,7 @@
 import torch
-from DroNet_Pytorch.load_datasets import DronetDataset
-from DroNet_Pytorch.dronet_torch import DronetTorch
-from DroNet_Pytorch.dronet_torch import getModel
+from DroNet_Pytorch.dronet_load_datasets import DronetDataset
+from DroNet_Pytorch.dronet_model import DronetTorch
+from DroNet_Pytorch.dronet_model import getModel
 from load_data import *
 import torch.nn.functional as F
 from PIL import Image, ImageDraw
