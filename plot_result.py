@@ -9,7 +9,7 @@ from sklearn.metrics import confusion_matrix
 def plot_loss(experiment_rootdir, fname):
     # Read log file
     try:
-        log = np.genfromtxt(fname, delimiter=',', dtype=None)
+        log = np.loadtxt(fname, delimiter=',')
     except:
         raise IOError("Log file not found")
 
@@ -18,12 +18,13 @@ def plot_loss(experiment_rootdir, fname):
     timesteps = list(range(train_loss.shape[0]))
 
     # Plot losses
+    plt.figure()
     plt.plot(timesteps, train_loss, 'r--', timesteps, val_loss, 'b--')
     plt.legend(["Training loss", "Validation loss"])
     plt.ylabel('Loss')
     plt.xlabel('Epochs')
-    plt.show()
     plt.savefig(os.path.join(experiment_rootdir, "log.png"))
+    plt.show()
 
 
 def make_and_save_histograms(pred_steerings, real_steerings,
@@ -92,8 +93,11 @@ def plot_confusion_matrix(real_labels, pred_prob, classes,
 
 
 if __name__ == "__main__":
-    experiment_rootdir = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test1_RGB_old_loss_200_nice"
-    eval_path = "patch_test4_26"
+    # experiment_rootdir = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/test4_GRAY_new_loss_500"
+    # eval_path = "evaluation_70"
+    experiment_rootdir = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/test1_RGB_old_loss_200_nice"
+    eval_path = "patch_test4_38"
+
 
     # Compute histograms from predicted and real steerings
     fname_steer = os.path.join(experiment_rootdir, eval_path, 'predicted_and_real_steerings.json')

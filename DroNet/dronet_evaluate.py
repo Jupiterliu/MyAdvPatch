@@ -1,7 +1,7 @@
 import torch
-from DroNet_Pytorch.dronet_load_datasets import DronetDataset
-from DroNet_Pytorch.dronet_model import DronetTorch
-from DroNet_Pytorch.dronet_model import getModel
+from DroNet.dronet_load_datasets import DronetDataset
+from DroNet.dronet_model import DronetTorch
+from DroNet.dronet_model import getModel
 from load_data import *
 import torch.nn.functional as F
 from PIL import Image, ImageDraw
@@ -241,8 +241,8 @@ def mul_columns_sort(data):
 
 if __name__ == '__main__':
     image_mode = "gray"
-    weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test4_GRAY_new_loss_500/weights_036.pth"
-    # weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test3_RGB_old_loss_500/weights_435.pth"
+    weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/test4_GRAY_new_loss_500/weights_070.pth"
+    # weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/test3_RGB_old_loss_500/weights_435.pth"
     dronet = getModel((200, 200), image_mode, 1, weights_path)
     # print(dronet)
     dronet = dronet.eval().cuda()
@@ -251,13 +251,13 @@ if __name__ == '__main__':
     testing_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'testing', image_mode, augmentation=False)
     testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=16, shuffle=True, num_workers=10)
 
-    test_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test4_GRAY_new_loss_500"
-    eval_path = "evaluation_36"
+    test_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/test4_GRAY_new_loss_500"
+    eval_path = "evaluation_70"
     folder = os.path.exists(os.path.join(test_path, eval_path))
     if not folder:
         os.makedirs(os.path.join(test_path, eval_path))
 
-    patchfile = "/root/Python_Program_Remote/MyAdvPatch/DroNet_patch/test2_random_scale/20220517-231221_steer-0.0_coll-0.0_100.png"
+    patchfile = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test2_random_scale/20220517-231221_steer-0.0_coll-0.0_100.png"
     adv_patch = Image.open(patchfile).convert('RGB')
     adv_patch = transforms.ToTensor()(adv_patch).cuda()
 

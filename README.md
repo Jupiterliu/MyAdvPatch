@@ -27,11 +27,11 @@ Here we create a exp-env named `test2_random_scale`.
 
 You can generate a physical patch by running:
 ```
-python train_patch.py test2_random_scale
+python patch_train.py test2_random_scale
 ```
 You also can evaluate the attacking effect of a generated patch by running:
 ```
-python test_patch.py && python plot_result.py
+python patch_evaluate.py && python plot_result.py
 ```
 # Implement Attack 
 You can attack a Dronet-based UAV both in SITL(Sofeware in the Loop) and HITL(Hardware in the Loop).

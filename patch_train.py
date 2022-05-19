@@ -21,9 +21,9 @@ import patch_config
 import sys
 import time
 
-# import DroNet_Pytorch.dronet_torch
-from DroNet_Pytorch.dronet_model import getModel
-from DroNet_Pytorch.dronet_load_datasets import DronetDataset
+# import DroNet.dronet_torch
+from DroNet.dronet_model import getModel
+from DroNet.dronet_load_datasets import DronetDataset
 
 class PatchTrainer(object):
     def __init__(self, mode):
@@ -31,7 +31,7 @@ class PatchTrainer(object):
         self.config = patch_config.patch_configs[mode]()
 
         # Load DroNet model from .pth & eval()
-        weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test1_RGB_old_loss_200_nice/weights_199.pth"
+        weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/test1_RGB_old_loss_200_nice/weights_199.pth"
         self.dronet_model = getModel((200, 200), self.config.image_mode, 1, weights_path)
         self.dronet_model = self.dronet_model.eval().cuda()
 

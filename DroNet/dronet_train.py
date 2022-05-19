@@ -2,8 +2,9 @@ import sys
 import numpy as np
 import os
 
-from DroNet_Pytorch import dronet_model
-from DroNet_Pytorch.dronet_load_datasets import DronetDataset
+from DroNet.dronet_model import getModel
+from DroNet.dronet_model import DronetTorch
+from DroNet.dronet_load_datasets import DronetDataset
 import matplotlib.pyplot as plt
 
 import torch
@@ -11,40 +12,7 @@ import torch
 from tqdm import tqdm
 
 
-def getModel(img_dims, image_mode, output_dim, weights_path):
-    '''
-      Initialize model.
-
-      ## Arguments
-
-        `img_dims`: Target image dimensions.
-
-        `img_channels`: Target image channels.
-
-        `output_dim`: Dimension of model output.
-
-        `weights_path`: Path to pre-trained model.
-
-      ## Returns
-        `model`: the pytorch model
-    '''
-    if image_mode=="rgb":
-        img_channels = 3
-    else:
-        img_channels = 1
-    model = dronet_torch.DronetTorch(img_dims, img_channels, output_dim)
-    # if weights path exists...
-    if weights_path:
-        try:
-            model.load_state_dict(torch.load(weights_path))
-            print("Loaded model from {}".format(weights_path))
-        except:
-            print("Impossible to find weight path. Returning untrained model")
-
-    return model
-
-
-def trainModel(model: dronet_torch.DronetTorch, epochs, batch_size, steps_save, k, image_mode):
+def trainModel(model: DronetTorch, epochs, batch_size, steps_save, k, image_mode, exp_dir, use_old_loss):
     '''
     trains the model.
 
@@ -69,7 +37,9 @@ def trainModel(model: dronet_torch.DronetTorch, epochs, batch_size, steps_save, 
     epoch_length = len(training_dataloader)
     # adam optimizer with weight decay
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5)
-    epoch_loss = np.zeros((epochs, 2))
+    # epoch_loss = np.zeros((1, 2))
+    epoch_loss_train = np.array([])
+    epoch_loss_val = np.array([])
     for epoch in range(epochs):
         # scale the weights on the loss and the epoch number
         train_losses = []
@@ -91,7 +61,7 @@ def trainModel(model: dronet_torch.DronetTorch, epochs, batch_size, steps_save, 
             #     plt.imshow(image)
             #     plt.show()
 
-            loss = model.loss(k, steer_true, steer_pred, coll_true, coll_pred, use_old_loss = False)
+            loss = model.loss(k, steer_true, steer_pred, coll_true, coll_pred, use_old_loss)
             # backpropagate loss
             loss.backward()
             # optimizer step
@@ -106,7 +76,7 @@ def trainModel(model: dronet_torch.DronetTorch, epochs, batch_size, steps_save, 
         if epoch % steps_save == 0:
             print('Saving results...')
 
-            weights_path = os.path.join('saved_models', 'test4_GRAY_new_loss_500', f'weights_{epoch:03d}.pth')
+            weights_path = os.path.join(exp_dir, "models", f'weights_{epoch:03d}.pth')
             torch.save(model.state_dict(), weights_path)
         # evaluate on validation set
         for batch_idx, (img, steer_true, coll_true) in tqdm(enumerate(validation_dataloader),
@@ -122,17 +92,30 @@ def trainModel(model: dronet_torch.DronetTorch, epochs, batch_size, steps_save, 
 
         validation_loss = np.array(validation_losses).mean()
         print(f'validation loss: {validation_loss.item()}')
-        epoch_loss[epoch, 0] = train_loss
-        epoch_loss[epoch, 1] = validation_loss
+        # epoch_loss[epoch, 0] = train_loss
+        # epoch_loss[epoch, 1] = validation_loss
+        epoch_loss_train = np.append(epoch_loss_train, train_loss)
+        epoch_loss_val = np.append(epoch_loss_val, validation_loss)
+        epoch_loss = np.concatenate((epoch_loss_train.reshape(-1, 1), epoch_loss_val.reshape(-1, 1)), axis=1)
         # Save training and validation losses.
-        np.savetxt(os.path.join('saved_models', 'test4_GRAY_new_loss_500', 'losses.txt'), epoch_loss, fmt="%f", delimiter=", ")
+        np.savetxt(os.path.join(exp_dir, 'losses.txt'), epoch_loss, fmt="%f", delimiter=", ")
     # save final results
-    #np.savetxt(os.path.join('saved_models', 'test3_RGB_old_loss_500', 'losses.txt'), epoch_loss)
+    #np.savetxt(os.path.join('saved_model', 'test3_RGB_old_loss_500', 'losses.txt'), epoch_loss)
 
 
 
 if __name__ == "__main__":
+    # Train a model with gray or rgb input
     image_mode = "gray"
+
+    # Path to save models
+    exp_root = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model"
+    exp_name = "test5_GRAY_old_loss"
+    folder = os.path.join(exp_root, exp_name)
+    if not os.path.exists(os.path.join(folder, "models")):
+        os.makedirs(os.path.join(folder, "models"))
+
+    # Create and train a Dronet model
     dronet = getModel((200, 200), image_mode, 1, None)
     # print(dronet)
-    trainModel(dronet, 500, 16, 1, 8, image_mode)
+    trainModel(dronet, 500, 16, 1, 8, image_mode, folder, use_old_loss = True)
