@@ -8,7 +8,7 @@ import torchvision.transforms.functional as TF
 import cv2
 
 class DronetDataset(torch.utils.data.Dataset):
-    def __init__(self, root_dir, data_group, augmentation=False, grayscale=False, verbose=False):
+    def __init__(self, root_dir, data_group, image_mode, augmentation=False, grayscale=False, verbose=False):
         '''
         DronetDataset class. Loads data from both Udacity and ETH Zurich bicycle datasets.
         While iterating through this dataset, dataset[i] returns 3 tensors: the normalized image
@@ -35,6 +35,7 @@ class DronetDataset(torch.utils.data.Dataset):
         self.root_dir = root_dir
         self.verbose = verbose
         self.transforms_list = []
+        self.img_mode = image_mode
         if augmentation:
             self.transforms_list = [
                 # this is a good one, changes
@@ -134,9 +135,11 @@ class DronetDataset(torch.utils.data.Dataset):
         # image reading code:
         image = cv2.imread(item[0])
         img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        # img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        if self.img_mode == "gray":
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         img = cv2.resize(img, (320, 240))
         img = self.central_image_crop(img, 200, 200)
+        # img = self.central_image_crop(img, 416, 416)
         img = np.asarray(img, dtype=np.float32) * np.float32(1.0 / 255.0)
 
         image_tensor = transforms.ToTensor()(img)

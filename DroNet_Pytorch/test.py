@@ -240,18 +240,19 @@ def mul_columns_sort(data):
 
 
 if __name__ == '__main__':
-    # weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test1_RGB_old_loss_200_nice/weights_199.pth"
-    weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test3_RGB_old_loss_500/weights_435.pth"
-    dronet = getModel((200, 200), 3, 1, weights_path)
-    print(dronet)
+    image_mode = "gray"
+    weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test4_GRAY_new_loss_500/weights_013.pth"
+    # weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test3_RGB_old_loss_500/weights_435.pth"
+    dronet = getModel((200, 200), image_mode, 1, weights_path)
+    # print(dronet)
     dronet = dronet.eval().cuda()
 
     # Load testing data
-    testing_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'testing', augmentation=False)
+    testing_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'testing', image_mode, augmentation=False)
     testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=16, shuffle=True, num_workers=10)
 
-    test_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test3_RGB_old_loss_500"
-    eval_path = "evaluation_435"
+    test_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test4_GRAY_new_loss_500"
+    eval_path = "evaluation_13"
     folder = os.path.exists(os.path.join(test_path, eval_path))
     if not folder:
         os.makedirs(os.path.join(test_path, eval_path))

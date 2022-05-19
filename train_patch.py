@@ -31,8 +31,8 @@ class PatchTrainer(object):
         self.config = patch_config.patch_configs[mode]()
 
         # Load DroNet model from .pth & eval()
-        weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test1_RGB_old_loss_nice/weights_199.pth"
-        self.dronet_model = getModel((200, 200), 3, 1, weights_path)
+        weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet_Pytorch/saved_models/test1_RGB_old_loss_200_nice/weights_199.pth"
+        self.dronet_model = getModel((200, 200), self.config.image_mode, 1, weights_path)
         self.dronet_model = self.dronet_model.eval().cuda()
 
         # Load patch Projection
@@ -64,11 +64,12 @@ class PatchTrainer(object):
         time_str = time.strftime("%Y%m%d-%H%M%S")
 
         # Generate starting point: patch(gray or random)
-        adv_patch_cpu = self.generate_patch("gray")
+        adv_patch_cpu = self.generate_patch("gray")  # gray or random
         adv_patch_cpu.requires_grad_(True)
 
         # Load my data from collision testing
-        training_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'training', augmentation=False)
+        training_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'training',
+                                            self.config.image_mode, augmentation=False)
         training_dataloader = torch.utils.data.DataLoader(training_dataset, batch_size=self.config.batch_size,
                                                             shuffle=True, num_workers=self.config.num_workers)
         self.epoch_length = len(training_dataloader)
@@ -96,11 +97,17 @@ class PatchTrainer(object):
                     adv_patch = adv_patch_cpu.cuda()
 
                     # patch projection
+                    # if self.config.image_mode == "gray":
+                    #     adv_patch = transforms.Grayscale()(adv_patch)
                     adv_batch_t = self.patch_transformer(adv_patch, steer_true, self.config.image_size, do_rotate=True, rand_loc=True)
                     p_img_batch = self.patch_applier(img_batch, adv_batch_t)
-                    # p_img_batch = p_img_batch.swapaxes(1,-1).swapaxes(1,2).cpu().detach().numpy()
-                    # p_img_batch_gray = transforms.Grayscale()(p_img_batch).squeeze(1).unsqueeze(-1).cpu().detach().numpy()
                     p_img_batch = F.interpolate(p_img_batch, (200, 200))  # Up or Down sample
+
+                    for i in range(p_img_batch.size(0)):
+                        Tensor = p_img_batch[i, :, :, :]
+                        image = np.transpose(Tensor.detach().cpu().numpy(), (1, 2, 0))
+                        plt.imshow(image)
+                        plt.show()
 
                     # Prediction
                     steer_pred, coll_pred = self.dronet_model(p_img_batch)

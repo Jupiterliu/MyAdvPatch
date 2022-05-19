@@ -4,13 +4,14 @@ import os
 
 from DroNet_Pytorch import dronet_torch
 from DroNet_Pytorch.load_datasets import DronetDataset
+import matplotlib.pyplot as plt
 
 import torch
 
 from tqdm import tqdm
 
 
-def getModel(img_dims, img_channels, output_dim, weights_path):
+def getModel(img_dims, image_mode, output_dim, weights_path):
     '''
       Initialize model.
 
@@ -27,6 +28,10 @@ def getModel(img_dims, img_channels, output_dim, weights_path):
       ## Returns
         `model`: the pytorch model
     '''
+    if image_mode=="rgb":
+        img_channels = 3
+    else:
+        img_channels = 1
     model = dronet_torch.DronetTorch(img_dims, img_channels, output_dim)
     # if weights path exists...
     if weights_path:
@@ -39,7 +44,7 @@ def getModel(img_dims, img_channels, output_dim, weights_path):
     return model
 
 
-def trainModel(model: dronet_torch.DronetTorch, epochs, batch_size, steps_save, k):
+def trainModel(model: dronet_torch.DronetTorch, epochs, batch_size, steps_save, k, image_mode):
     '''
     trains the model.
 
@@ -52,9 +57,9 @@ def trainModel(model: dronet_torch.DronetTorch, epochs, batch_size, steps_save, 
     model.train()
     # create dataloaders for validation and training
     training_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'training',
-                                        augmentation=False, grayscale=False)
+                                        image_mode, augmentation=False, grayscale=False)
     validation_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'validation',
-                                        augmentation=False, grayscale=False)
+                                        image_mode, augmentation=False, grayscale=False)
 
     training_dataloader = torch.utils.data.DataLoader(training_dataset, batch_size=batch_size,
                                                         shuffle=True, num_workers=10)
@@ -79,7 +84,14 @@ def trainModel(model: dronet_torch.DronetTorch, epochs, batch_size, steps_save, 
             # get loss, perform hard mining
             steer_true = steer_true.squeeze(1).to(model.device)
             coll_true = coll_true.squeeze(1).to(model.device)
-            loss = model.loss(k, steer_true, steer_pred, coll_true, coll_pred, use_old_loss = True)
+
+            # for i in range(img.size(0)):
+            #     Tensor = img[i, :, :, :]
+            #     image = np.transpose(Tensor.detach().cpu().numpy(), (1, 2, 0))
+            #     plt.imshow(image)
+            #     plt.show()
+
+            loss = model.loss(k, steer_true, steer_pred, coll_true, coll_pred, use_old_loss = False)
             # backpropagate loss
             loss.backward()
             # optimizer step
@@ -94,7 +106,7 @@ def trainModel(model: dronet_torch.DronetTorch, epochs, batch_size, steps_save, 
         if epoch % steps_save == 0:
             print('Saving results...')
 
-            weights_path = os.path.join('saved_models', 'test3_RGB_old_loss_500', f'weights_{epoch:03d}.pth')
+            weights_path = os.path.join('saved_models', 'test4_GRAY_new_loss_500', f'weights_{epoch:03d}.pth')
             torch.save(model.state_dict(), weights_path)
         # evaluate on validation set
         for batch_idx, (img, steer_true, coll_true) in tqdm(enumerate(validation_dataloader),
@@ -113,13 +125,14 @@ def trainModel(model: dronet_torch.DronetTorch, epochs, batch_size, steps_save, 
         epoch_loss[epoch, 0] = train_loss
         epoch_loss[epoch, 1] = validation_loss
         # Save training and validation losses.
-        np.savetxt(os.path.join('saved_models', 'test3_RGB_old_loss_500', 'losses.txt'), epoch_loss)
+        np.savetxt(os.path.join('saved_models', 'test4_GRAY_new_loss_500', 'losses.txt'), epoch_loss, fmt="%f", delimiter=", ")
     # save final results
     #np.savetxt(os.path.join('saved_models', 'test3_RGB_old_loss_500', 'losses.txt'), epoch_loss)
 
 
 
 if __name__ == "__main__":
-    dronet = getModel((200, 200), 3, 1, None)
-    print(dronet)
-    trainModel(dronet, 500, 16, 1, 8)
+    image_mode = "gray"
+    dronet = getModel((200, 200), image_mode, 1, None)
+    # print(dronet)
+    trainModel(dronet, 500, 16, 1, 8, image_mode)

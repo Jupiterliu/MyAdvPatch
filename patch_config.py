@@ -42,11 +42,12 @@ class PhysicalPatch(BaseConfig):
         self.k = 8   # hard-mining
         self.num_workers = 10
 
-        self.patch_size = 100
+        self.patch_size = 200
         self.image_size = 200
+        self.image_mode = "rgb"  # "rgb" or "gray"
 
         self.is_targeted = True  # False
-        self.steer_target = 0.5
+        self.steer_target = 0.
         self.coll_target = 0.
         self.use_old_loss = True  # False
 

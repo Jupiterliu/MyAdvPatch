@@ -9,7 +9,7 @@ import onnx
 from onnx import backend
 # import onnx_tensorrt.backend as backend
 
-def getModel(img_dims, img_channels, output_dim, weights_path):
+def getModel(img_dims, image_mode, output_dim, weights_path):
     '''
     Initialize model.
 
@@ -26,6 +26,10 @@ def getModel(img_dims, img_channels, output_dim, weights_path):
     ## Returns
         `model`: the pytorch model
     '''
+    if image_mode == "rgb":
+        img_channels = 3
+    else:
+        img_channels = 1
     model = DronetTorch(img_dims, img_channels, output_dim)
     # if weights path exists...
     if weights_path:
