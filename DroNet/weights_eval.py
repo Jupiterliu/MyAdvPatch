@@ -137,12 +137,12 @@ def mul_columns_sort(data):
 
 if __name__ == '__main__':
     # Load testing data
-    image_mode = "rgb"
+    image_mode = "gray"
     testing_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'testing', image_mode,
                                     augmentation=False)
     testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=64, shuffle=True, num_workers=10)
 
-    models_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/test3_RGB_old_loss_500/models"
+    models_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/test5_GRAY_old_loss_141/models"
     print("Loaded weights path: ", models_path)
     weights = sorted(os.listdir(models_path))
     all_criterion = np.zeros((len(weights), 7))

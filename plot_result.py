@@ -93,10 +93,10 @@ def plot_confusion_matrix(real_labels, pred_prob, classes,
 
 
 if __name__ == "__main__":
-    # experiment_rootdir = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/test4_GRAY_new_loss_500"
-    # eval_path = "evaluation_70"
     experiment_rootdir = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/test1_RGB_old_loss_200_nice"
-    eval_path = "patch_test4_38"
+    eval_path = "evaluation_199"
+    # experiment_rootdir = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/test1_RGB_old_loss_200_nice"
+    # eval_path = "patch_test4_38"
 
 
     # Compute histograms from predicted and real steerings
