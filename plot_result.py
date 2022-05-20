@@ -42,6 +42,7 @@ def make_and_save_histograms(pred_steerings, real_steerings,
     max_h = np.maximum(np.max(pred_steerings), np.max(real_steerings))
     min_h = np.minimum(np.min(pred_steerings), np.min(real_steerings))
     bins = np.linspace(min_h, max_h, num=50)
+    plt.figure()
     plt.hist(pred_steerings, bins=bins, alpha=0.5, label='Predicted', color='b')
     plt.hist(real_steerings, bins=bins, alpha=0.5, label='Real', color='r')
     # plt.title('Steering angle')
@@ -90,13 +91,14 @@ def plot_confusion_matrix(real_labels, pred_prob, classes,
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
     plt.savefig(img_name)
+    plt.show()
 
 
 if __name__ == "__main__":
-    experiment_rootdir = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/test1_RGB_old_loss_200_nice"
-    eval_path = "evaluation_199"
     # experiment_rootdir = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/test1_RGB_old_loss_200_nice"
-    # eval_path = "patch_test4_38"
+    # eval_path = "evaluation_199"
+    experiment_rootdir = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/best_model_RGB"
+    eval_path = "patch_test6_9"
 
 
     # Compute histograms from predicted and real steerings
@@ -116,5 +118,5 @@ if __name__ == "__main__":
                             img_name=os.path.join(experiment_rootdir, eval_path, "confusion.png"))
 
     # Plot Loss from losses.txt
-    fname_loss = os.path.join(experiment_rootdir, 'losses.txt')
+    # fname_loss = os.path.join(experiment_rootdir, 'losses.txt')
     # plot_loss(experiment_rootdir, fname_loss)

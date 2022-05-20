@@ -137,7 +137,7 @@ def mul_columns_sort(data):
 
 if __name__ == '__main__':
     # Load testing data
-    image_mode = "gray"
+    image_mode = "rgb"
     testing_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'testing', image_mode,
                                     augmentation=False)
     testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=64, shuffle=True, num_workers=10)
@@ -146,21 +146,21 @@ if __name__ == '__main__':
     print("Loaded weights path: ", models_path)
     weights = sorted(os.listdir(models_path))
     all_criterion = np.zeros((len(weights), 7))
-    i = 0
+    index = 0
     for weight in weights:
         weight_path = os.path.join(models_path, weight)
         dronet = getModel((200, 200), image_mode, 1, weight_path)
         dronet = dronet.eval().cuda()
         with torch.no_grad():
             eva, rmse, ave_accuracy, precision, recall, f_score = testModel(dronet, testing_dataloader)
-            all_criterion[i, 0] = i
-            all_criterion[i, 1] = eva
-            all_criterion[i, 2] = rmse
-            all_criterion[i, 3] = ave_accuracy
-            all_criterion[i, 4] = precision
-            all_criterion[i, 5] = recall
-            all_criterion[i, 6] = f_score
-            i = i + 1
+            all_criterion[index, 0] = index
+            all_criterion[index, 1] = eva
+            all_criterion[index, 2] = rmse
+            all_criterion[index, 3] = ave_accuracy
+            all_criterion[index, 4] = precision
+            all_criterion[index, 5] = recall
+            all_criterion[index, 6] = f_score
+            index = index + 1
             np.savetxt(os.path.join(models_path, 'all_criterion.txt'), all_criterion, fmt="%f")
 
     # all_criterion

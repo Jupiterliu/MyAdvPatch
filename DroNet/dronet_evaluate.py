@@ -2,6 +2,7 @@ import torch
 from DroNet.dronet_load_datasets import DronetDataset
 from DroNet.dronet_model import DronetTorch
 from DroNet.dronet_model import getModel
+from plot_result import *
 from load_data import *
 import torch.nn.functional as F
 from PIL import Image, ImageDraw
@@ -258,11 +259,22 @@ if __name__ == '__main__':
     if not folder:
         os.makedirs(os.path.join(test_path, eval_path))
 
-    patchfile = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test2_random_scale/20220517-231221_steer-0.0_coll-0.0_100.png"
-    adv_patch = Image.open(patchfile).convert('RGB')
-    adv_patch = transforms.ToTensor()(adv_patch).cuda()
-
     is_patch_test = False
 
     with torch.no_grad():
-        testModel(dronet, testing_dataloader, test_path, eval_path, is_patch_test, adv_patch)
+        testModel(dronet, testing_dataloader, test_path, eval_path, is_patch_test, None)
+
+    # Compute histograms from predicted and real steerings
+    fname_steer = os.path.join(test_path, eval_path, 'predicted_and_real_steerings.json')
+    with open(fname_steer, 'r') as f1:
+        dict_steerings = json.load(f1)
+    make_and_save_histograms(dict_steerings['pred_steerings'], dict_steerings['real_steerings'],
+                                os.path.join(test_path, eval_path, "histograms.png"))
+
+    # Compute confusion matrix from predicted and real labels
+    fname_labels = os.path.join(test_path, eval_path, 'predicted_and_real_labels.json')
+    with open(fname_labels, 'r') as f2:
+        dict_labels = json.load(f2)
+    plot_confusion_matrix(dict_labels['real_labels'], dict_labels['pred_probabilities'],
+                            ['no collision', 'collision'],
+                            img_name=os.path.join(test_path, eval_path, "confusion.png"))
