@@ -171,6 +171,6 @@ if __name__ == '__main__':
             all_criterion[index, 5] = recall
             all_criterion[index, 6] = f_score
             index = index + 1
-            np.savetxt(os.path.join(patchs_path, 'patchs_criterion.txt'), all_criterion, fmt="%f")
+            np.savetxt(os.path.join("/root/Python_Program_Remote/MyAdvPatch/saved_patch", 'patchs_criterion.txt'), all_criterion, fmt="%f")
 
     # all_criterion

@@ -216,20 +216,20 @@ class PatchTransformer(nn.Module):
 
     def __init__(self):
         super(PatchTransformer, self).__init__()
-        self.min_contrast = 0.7  # 0.8
-        self.max_contrast = 1.3  # 1.2
-        self.min_brightness = -0.2  # -0.1
-        self.max_brightness = 0.2  # 0.1
-        self.min_scale = 0.15  # Scale the patch size from (patch_size * min_scale) to (patch_size * max_scale)
+        self.min_contrast = 0.6  # 0.8
+        self.max_contrast = 1.4  # 1.2
+        self.min_brightness = -0.3  # -0.1
+        self.max_brightness = 0.3  # 0.1
+        self.min_scale = 0.075  # Scale the patch size from (patch_size * min_scale) to (patch_size * max_scale)
         self.max_scale = 0.8
-        self.noise_factor = 0.10
+        self.noise_factor = 0.15
         self.minangle = -10 / 180 * math.pi
         self.maxangle = 10 / 180 * math.pi
         self.medianpooler = MedianPool2d(7, same=True)
 
     def forward(self, adv_patch, steer_true, img_size, do_rotate=True, rand_loc=True):
         # adv_patch = F.conv2d(adv_patch.unsqueeze(0),self.kernel,padding=(2,2))
-        adv_patch = transforms.Resize((100, 100))(adv_patch)
+        #adv_patch = transforms.Resize((100, 100))(adv_patch)
         adv_patch = self.medianpooler(adv_patch.unsqueeze(0))
         # Determine size of padding
         pad = (img_size - adv_patch.size(-1)) / 2

@@ -85,8 +85,9 @@ class PatchTrainer(object):
             ep_tv_loss = 0
             ep_loss = 0
             bt0 = time.time()
-            other_val = (1 - torch.exp(torch.Tensor([-1 * (0.1) * (epoch - 10)]))).float().cuda()
-            beta = torch.max(torch.Tensor([0]).float().cuda(), other_val)
+            other_val = (1 - torch.exp(torch.Tensor([-1 * (0.1) * (epoch - self.config.beta)]))).float().cuda()
+            #beta = torch.max(torch.Tensor([0]).float().cuda(), other_val)
+            beta = torch.Tensor([1.0]).float().cuda()
             for i_batch, (img_batch, steer_true, coll_true) in tqdm(enumerate(training_dataloader),
                                                                     desc=f'Running epoch {epoch}', total=self.epoch_length):
                 with autograd.detect_anomaly():
@@ -161,7 +162,7 @@ class PatchTrainer(object):
 
             im = transforms.ToPILImage('RGB')(adv_patch_cpu)
             plt.imshow(im)
-            im.save(f'/root/Python_Program_Remote/MyAdvPatch/saved_patch/test6_old_loss_beta10/{time_str}_steer-{self.config.steer_target}_coll-{self.config.coll_target}_{epoch}.png')
+            im.save(f'/root/Python_Program_Remote/MyAdvPatch/saved_patch/test8_old_loss_nobeta_balance5_npstvnotchange/{time_str}_steer-{self.config.steer_target}_coll-{self.config.coll_target}_{epoch}.png')
 
             scheduler.step(ep_loss)
             if True:

@@ -31,12 +31,12 @@ if __name__ == '__main__':
     testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=16, shuffle=True, num_workers=10)
 
     test_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/best_model_RGB"
-    eval_path = "patch_test6_33"
+    eval_path = "patch_test6_74"
     folder  = os.path.exists(os.path.join(test_path, eval_path))
     if not folder:
         os.makedirs(os.path.join(test_path, eval_path))
 
-    patchfile = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test6_old_loss_beta10/20220520-122725_steer-0.0_coll-0.0_33.png"
+    patchfile = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test6_old_loss_beta10/20220520-122725_steer-0.0_coll-0.0_74.png"
     adv_patch = Image.open(patchfile).convert('RGB')
     adv_patch = transforms.ToTensor()(adv_patch).cuda()
 

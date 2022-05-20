@@ -12,7 +12,7 @@ import torch
 from tqdm import tqdm
 
 
-def trainModel(model: DronetTorch, epochs, batch_size, steps_save, k, image_mode, exp_dir, use_old_loss):
+def trainModel(model: DronetTorch, epochs, batch_size, steps_save, k, beta, image_mode, exp_dir, use_old_loss):
     '''
     trains the model.
 
@@ -45,7 +45,7 @@ def trainModel(model: DronetTorch, epochs, batch_size, steps_save, k, image_mode
         train_losses = []
         validation_losses = []
         # rip through the dataset
-        other_val = (1 - torch.exp(torch.Tensor([-1 * model.decay * (epoch - 50)]))).float().to(model.device)
+        other_val = (1 - torch.exp(torch.Tensor([-1 * model.decay * (epoch - beta)]))).float().to(model.device)
         model.beta = torch.max(torch.Tensor([0]).float().to(model.device), other_val)
         for batch_idx, (img, steer_true, coll_true) in tqdm(enumerate(training_dataloader),
                                                             desc=f'Running epoch {epoch}', total=epoch_length):
@@ -106,11 +106,17 @@ def trainModel(model: DronetTorch, epochs, batch_size, steps_save, k, image_mode
 
 if __name__ == "__main__":
     # Train a model with gray or rgb input
+    epochs = 500
+    batch_size = 64
+    steps_save = 1
+    k = 64
+    beta = 20
     image_mode = "rgb"
+    use_old_loss = False
 
     # Path to save models
     exp_root = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model"
-    exp_name = "test6_RGB_old_loss_beta50"
+    exp_name = "test7_RGB_new_loss_beta20"
     folder = os.path.join(exp_root, exp_name)
     if not os.path.exists(os.path.join(folder, "models")):
         os.makedirs(os.path.join(folder, "models"))
@@ -119,4 +125,4 @@ if __name__ == "__main__":
     dronet = getModel((200, 200), image_mode, 1, None)
     # print(dronet)
     # Old loss behavior great during training model
-    trainModel(dronet, 500, 16, 1, 8, image_mode, folder, use_old_loss = True)
+    trainModel(dronet, epochs, batch_size, steps_save, k, beta, image_mode, folder, use_old_loss)
