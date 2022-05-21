@@ -9,8 +9,6 @@ from PIL import Image, ImageDraw
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.autograd import Variable
-import torchvision.transforms.functional as tvfunc
 
 
 def get_max_probability(output, cls_id, num_classes):

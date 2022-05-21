@@ -2,22 +2,12 @@
 Testing code for Physical Adversarial patch Attack
 """
 
-import sys
-import time
-import os
-import torch
-import torch.optim as optim
-import torch.nn as nn
-import torch.nn.functional as F
 from torch.utils.data import Dataset
-from torchvision import transforms
-from PIL import Image, ImageDraw
-from utils import *
-from load_data import PatchTransformer, PatchApplier
-import json
-from DroNet.dronet_evaluate import *
+
+from DroNet.dronet_model import getModel
 from DroNet.dronet_load_datasets import DronetDataset
-from plot_result import *
+
+from utils.evaluation import *
 
 if __name__ == '__main__':
     image_mode = "rgb"
@@ -30,13 +20,13 @@ if __name__ == '__main__':
     testing_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'testing', image_mode ,augmentation=False)
     testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=16, shuffle=True, num_workers=10)
 
-    test_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/best_model_RGB"
-    eval_path = "patch_test6_74"
+    test_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test7_old_loss_nobeta_balance1_npstvnotchange"
+    eval_path = "patch_test68"
     folder  = os.path.exists(os.path.join(test_path, eval_path))
     if not folder:
         os.makedirs(os.path.join(test_path, eval_path))
 
-    patchfile = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test6_old_loss_beta10/20220520-122725_steer-0.0_coll-0.0_74.png"
+    patchfile = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test7_old_loss_nobeta_balance1_npstvnotchange/20220521-013420_steer-0.0_coll-0.0_68.png"
     adv_patch = Image.open(patchfile).convert('RGB')
     adv_patch = transforms.ToTensor()(adv_patch).cuda()
 

@@ -1,25 +1,9 @@
-import fnmatch
-import math
-import os
-import sys
-import time
-from operator import itemgetter
-
-import gc
-import numpy as np
-import torch
-import torch.optim as optim
-from tqdm import tqdm
-import torch.nn as nn
-import torch.nn.functional as F
-from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms
-from median_pool import MedianPool2d
 
 from DroNet.dronet_model import getModel
 from DroNet.dronet_load_datasets import DronetDataset
-from plot_result import *
+from tasks.plot_result import *
 
 
 class PatchTransformer(nn.Module):

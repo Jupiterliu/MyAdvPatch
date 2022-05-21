@@ -2,15 +2,10 @@
 Training code for Physical Adversarial patch Attack
 """
 
-import PIL
-import torch
-
-import load_data
 from tqdm import tqdm
 
-import utils
-from load_data import *
-import gc
+from utils.images import *
+from utils.losses import *
 import matplotlib.pyplot as plt
 from torch import autograd
 from torchvision import transforms
