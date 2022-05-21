@@ -37,7 +37,7 @@ class PhysicalPatch(BaseConfig):
     def __init__(self):
         super().__init__()
 
-        self.n_epochs = 500
+        self.n_epochs = 70
         self.batch_size = 64
         self.k = 64   # hard-mining
         self.num_workers = 10

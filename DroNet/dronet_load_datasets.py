@@ -56,7 +56,7 @@ class DronetDataset(torch.utils.data.Dataset):
         self.to_tensor_list.append(normalize)
         self.to_tensor = transforms.Compose(self.to_tensor_list)
 
-        if data_group not in ['training', 'testing', 'validation', 'single-testing']:
+        if data_group not in ['training', 'testing', 'validation']:
             raise ValueError('Invalid data group selection. Choose from training, testing, validation')
         self.data_group = data_group
         # get the list of all of the files

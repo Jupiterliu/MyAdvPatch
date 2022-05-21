@@ -1,5 +1,6 @@
 import numpy as np
 np.set_printoptions(suppress=True)
+from torchvision import transforms
 
 from DroNet.dronet_model import getModel
 from DroNet.dronet_load_datasets import DronetDataset
@@ -20,11 +21,18 @@ if __name__ == '__main__':
 
     is_patch_test = True
 
-    patchs_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test7_old_loss_nobeta_balance1_npstvnotchange"
+    patchs_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test9_old_loss_beta10_balance5_npstvnotchange"
     print("Loaded weights path: ", patchs_path)
     folder = os.path.join(patchs_path, "multi_patchs_eval_result")
     if not os.path.exists(folder):
         os.makedirs(folder)
+    plot_result_confusion = os.path.join(patchs_path, "confusion")
+    if not os.path.exists(plot_result_confusion):
+        os.makedirs(plot_result_confusion)
+    plot_result_histograms = os.path.join(patchs_path, "histograms")
+    if not os.path.exists(plot_result_histograms):
+        os.makedirs(plot_result_histograms)
+
     patchs = sorted(os.listdir(os.path.join(patchs_path, "patchs")))
     all_criterion = np.zeros((len(patchs), 7))
     index = 0
@@ -52,7 +60,8 @@ if __name__ == '__main__':
         with open(fname_steer, 'r') as f1:
             dict_steerings = json.load(f1)
         make_and_save_histograms(dict_steerings['pred_steerings'], dict_steerings['real_steerings'],
-                                    os.path.join(folder, patch, "histograms.png"))
+                                    os.path.join(plot_result_histograms, "histograms_{}.png".format(index)),
+                                    title_name = "patch_{}".format(index))
 
         # Compute confusion matrix from predicted and real labels
         fname_labels = os.path.join(folder, patch, 'predicted_and_real_labels.json')
@@ -60,6 +69,7 @@ if __name__ == '__main__':
             dict_labels = json.load(f2)
         plot_confusion_matrix(dict_labels['real_labels'], dict_labels['pred_probabilities'],
                                 ['no collision', 'collision'],
-                                img_name=os.path.join(folder, patch, "confusion.png"))
+                                img_name=os.path.join(plot_result_confusion, "confusion_{}.png".format(index)),
+                                title_name = "patch_{}".format(index))
 
     # all_criterion
