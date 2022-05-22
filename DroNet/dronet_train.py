@@ -106,17 +106,17 @@ def trainModel(model: DronetTorch, epochs, batch_size, steps_save, k, beta, imag
 
 if __name__ == "__main__":
     # Train a model with gray or rgb input
-    epochs = 500
+    epochs = 600
     batch_size = 64
     steps_save = 1
     k = 64
-    beta = 20
+    beta = 50
     image_mode = "rgb"
     use_old_loss = False
 
     # Path to save models
     exp_root = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model"
-    exp_name = "test7_RGB_new_loss_beta20"
+    exp_name = "test8_RGB_new_loss_beta50"
     folder = os.path.join(exp_root, exp_name)
     if not os.path.exists(os.path.join(folder, "models")):
         os.makedirs(os.path.join(folder, "models"))

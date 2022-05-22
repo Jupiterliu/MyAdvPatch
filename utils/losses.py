@@ -22,8 +22,7 @@ class Attack_Loss(nn.Module):
             attack_loss = self.targeted_attack_loss(k, steer_true, steer_pred, coll_true, coll_pred, steer_target,
                                                     coll_target, use_old_loss, beta)
         else:
-            attack_loss = self.untargeted_attack_loss(k, steer_true, steer_pred, coll_true, coll_pred, use_old_loss,
-                                                      beta)
+            attack_loss = self.untargeted_attack_loss(k, steer_true, steer_pred, coll_true, coll_pred, use_old_loss, beta)
         return attack_loss
 
     def targeted_attack_loss(self, k, steer_true, steer_pred, coll_true, coll_pred, steer_target, coll_target,

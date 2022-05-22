@@ -3,6 +3,7 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torchvision import transforms
 
 from utils.median_pool import MedianPool2d
 
@@ -22,20 +23,20 @@ class PatchTransformer(nn.Module):
 
     def __init__(self):
         super(PatchTransformer, self).__init__()
-        self.min_contrast = 0.6  # 0.8
-        self.max_contrast = 1.4  # 1.2
-        self.min_brightness = -0.3  # -0.1
-        self.max_brightness = 0.3  # 0.1
-        self.min_scale = 0.075  # Scale the patch size from (patch_size * min_scale) to (patch_size * max_scale)
-        self.max_scale = 0.8
-        self.noise_factor = 0.15
+        self.min_contrast = 0.8  # 0.8
+        self.max_contrast = 1.2  # 1.2
+        self.min_brightness = -0.1  # -0.1
+        self.max_brightness = 0.1  # 0.1
+        self.min_scale = 0.5  # Scale the patch size from (patch_size * min_scale) to (patch_size * max_scale)
+        self.max_scale = 1.0
+        self.noise_factor = 0.1
         self.minangle = -10 / 180 * math.pi
         self.maxangle = 10 / 180 * math.pi
         self.medianpooler = MedianPool2d(7, same=True)
 
     def forward(self, adv_patch, steer_true, img_size, do_rotate=True, rand_loc=True):
         # adv_patch = F.conv2d(adv_patch.unsqueeze(0),self.kernel,padding=(2,2))
-        #adv_patch = transforms.Resize((100, 100))(adv_patch)
+        adv_patch = transforms.Resize((100, 100))(adv_patch)
         adv_patch = self.medianpooler(adv_patch.unsqueeze(0))
         # Determine size of padding
         pad = (img_size - adv_patch.size(-1)) / 2
@@ -94,14 +95,14 @@ class PatchTransformer(nn.Module):
             angle = torch.cuda.FloatTensor(anglesize).fill_(0)
 
         # Resizes and rotates
-        target_x = torch.cuda.FloatTensor([0.5])
-        target_y = torch.cuda.FloatTensor([0.5])
-        targetoff_x = torch.cuda.FloatTensor([0.])
-        targetoff_y = torch.cuda.FloatTensor([0.])
+        target_x = torch.cuda.FloatTensor([0.3])
+        target_y = torch.cuda.FloatTensor([0.3])
+        targetoff_x = torch.cuda.FloatTensor([0.4])
+        targetoff_y = torch.cuda.FloatTensor([0.4])
         if (rand_loc):
-            off_x = targetoff_x * (torch.cuda.FloatTensor(targetoff_x.size()).uniform_(-0.4, 0.4))
+            off_x = targetoff_x * (torch.cuda.FloatTensor(anglesize).uniform_(0, 1))
             target_x = target_x + off_x
-            off_y = targetoff_y * (torch.cuda.FloatTensor(targetoff_y.size()).uniform_(-0.4, 0.4))
+            off_y = targetoff_y * (torch.cuda.FloatTensor(anglesize).uniform_(0, 1))
             target_y = target_y + off_y
         # target_y = target_y - 0.05
 

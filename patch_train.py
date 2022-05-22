@@ -1,13 +1,14 @@
 """
 Training code for Physical Adversarial patch Attack
 """
+import os
 
 from tqdm import tqdm
 
 from utils.images import *
 from utils.losses import *
 import matplotlib.pyplot as plt
-from torch import autograd
+from torch import autograd, optim
 from torchvision import transforms
 from tensorboardX import SummaryWriter
 import subprocess
@@ -70,6 +71,14 @@ class PatchTrainer(object):
         self.epoch_length = len(training_dataloader)
         # print(f'One epoch is {len(training_dataloader)}')
 
+        root_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch"
+        saved_patch_name = "test11_balance5_nps01_tv5_scale05-10"
+        patch_path = os.path.join(root_path, saved_patch_name, "patchs")
+        if not os.path.exists(patch_path):
+            os.makedirs(patch_path)
+        if not os.path.exists(os.path.join(root_path, saved_patch_name, "temp")):
+            os.makedirs(os.path.join(root_path, saved_patch_name, "temp"))
+
         optimizer = optim.Adam([adv_patch_cpu], lr=self.config.start_learning_rate, amsgrad=True)
         scheduler = self.config.scheduler_factory(optimizer)  # Improving the performance by reducing the learning rate
 
@@ -80,8 +89,8 @@ class PatchTrainer(object):
             ep_tv_loss = 0
             ep_loss = 0
             bt0 = time.time()
-            other_val = (1 - torch.exp(torch.Tensor([-1 * (0.1) * (epoch - self.config.beta)]))).float().cuda()
-            #beta = torch.max(torch.Tensor([0]).float().cuda(), other_val)
+            # other_val = (1 - torch.exp(torch.Tensor([-1 * (0.1) * (epoch - self.config.beta)]))).float().cuda()
+            # beta = torch.max(torch.Tensor([0]).float().cuda(), other_val)
             beta = torch.Tensor([1.0]).float().cuda()
             for i_batch, (img_batch, steer_true, coll_true) in tqdm(enumerate(training_dataloader),
                                                                     desc=f'Running epoch {epoch}', total=self.epoch_length):
@@ -93,17 +102,19 @@ class PatchTrainer(object):
                     adv_patch = adv_patch_cpu.cuda()
 
                     # patch projection
-                    # if self.config.image_mode == "gray":
-                    #     adv_patch = transforms.Grayscale()(adv_patch)
-                    adv_batch_t = self.patch_transformer(adv_patch, steer_true, self.config.image_size, do_rotate=True, rand_loc=False)
+                    if self.config.image_mode == "gray":
+                        adv_patch = transforms.Grayscale()(adv_patch)
+                    adv_batch_t = self.patch_transformer(adv_patch, steer_true, self.config.image_size, do_rotate=True, rand_loc=True)
                     p_img_batch = self.patch_applier(img_batch, adv_batch_t)
                     p_img_batch = F.interpolate(p_img_batch, (200, 200))  # Up or Down sample
 
-                    # for i in range(p_img_batch.size(0)):
-                    #     Tensor = p_img_batch[i, :, :, :]
-                    #     image = np.transpose(Tensor.detach().cpu().numpy(), (1, 2, 0))
-                    #     plt.imshow(image)
-                    #     plt.show()
+                    if self.config.is_save_temp:
+                        for i in range(p_img_batch.size(0)):
+                            Tensor = p_img_batch[i, :, :, :]
+                            # image = np.transpose(Tensor.detach().cpu().numpy(), (1, 2, 0))
+                            patcded_image = transforms.ToPILImage('RGB')(Tensor)
+                            plt.imshow(patcded_image)
+                            patcded_image.save(os.path.join(root_path, saved_patch_name, "temp", "temp_batch{:0>2d}_im{:0>2d}.png".format(i_batch, i)))
 
                     # Prediction
                     steer_pred, coll_pred = self.dronet_model(p_img_batch)
@@ -118,9 +129,11 @@ class PatchTrainer(object):
                     # pnorm = self.pnorm_loss(adv_patch, p_img_batch)
 
                     # From the Loss weights to cal the total Loss
-                    nps_loss = nps * 0.01     # 0.01
-                    tv_loss = tv * 2.5    # 2.5
-                    loss = attack_loss + torch.max(tv_loss, torch.tensor(0.1).cuda())  # + nps_loss
+                    attack_loss = attack_loss * self.config.attack_loss_weight    # 1
+                    nps_loss = nps * self.config.nps_loss_weight                  # 0.01
+                    tv_loss = tv * self.config.tv_loss_weight                     # 2.5
+
+                    loss = attack_loss + torch.max(tv_loss, torch.tensor(0.1).cuda()) + nps_loss
 
                     ep_attack_loss += attack_loss.detach().cpu().numpy()
                     ep_nps_loss += nps_loss.detach().cpu().numpy()
@@ -157,7 +170,7 @@ class PatchTrainer(object):
 
             im = transforms.ToPILImage('RGB')(adv_patch_cpu)
             plt.imshow(im)
-            im.save(f'/root/Python_Program_Remote/MyAdvPatch/saved_patch/test8_old_loss_nobeta_balance5_npstvnotchange/{time_str}_steer-{self.config.steer_target}_coll-{self.config.coll_target}_{epoch}.png')
+            im.save(os.path.join(patch_path, "{}_steer{}_coll{}_ep{:0>2d}.png".format(time_str, self.config.steer_target, self.config.coll_target, epoch)))
 
             scheduler.step(ep_loss)
             if True:

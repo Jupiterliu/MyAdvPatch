@@ -21,7 +21,7 @@ if __name__ == '__main__':
 
     is_patch_test = True
 
-    patchs_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test9_old_loss_beta10_balance5_npstvnotchange"
+    patchs_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test10_balance5_nps01_tv5"
     print("Loaded weights path: ", patchs_path)
     folder = os.path.join(patchs_path, "multi_patchs_eval_result")
     if not os.path.exists(folder):
@@ -52,24 +52,24 @@ if __name__ == '__main__':
             all_criterion[index, 4] = precision
             all_criterion[index, 5] = recall
             all_criterion[index, 6] = f_score
-            index = index + 1
             np.savetxt(os.path.join(folder, 'patchs_criterion.txt'), all_criterion, fmt="%f")
 
-        # Compute histograms from predicted and real steerings
-        fname_steer = os.path.join(folder, patch, 'predicted_and_real_steerings.json')
-        with open(fname_steer, 'r') as f1:
-            dict_steerings = json.load(f1)
-        make_and_save_histograms(dict_steerings['pred_steerings'], dict_steerings['real_steerings'],
-                                    os.path.join(plot_result_histograms, "histograms_{}.png".format(index)),
-                                    title_name = "patch_{}".format(index))
+            # Compute histograms from predicted and real steerings
+            fname_steer = os.path.join(folder, patch, 'predicted_and_real_steerings.json')
+            with open(fname_steer, 'r') as f1:
+                dict_steerings = json.load(f1)
+            make_and_save_histograms(dict_steerings['pred_steerings'], dict_steerings['real_steerings'],
+                                        os.path.join(plot_result_histograms, "histograms_{}.png".format(index)),
+                                        title_name = "patch_{}".format(index))
 
-        # Compute confusion matrix from predicted and real labels
-        fname_labels = os.path.join(folder, patch, 'predicted_and_real_labels.json')
-        with open(fname_labels, 'r') as f2:
-            dict_labels = json.load(f2)
-        plot_confusion_matrix(dict_labels['real_labels'], dict_labels['pred_probabilities'],
-                                ['no collision', 'collision'],
-                                img_name=os.path.join(plot_result_confusion, "confusion_{}.png".format(index)),
-                                title_name = "patch_{}".format(index))
+            # Compute confusion matrix from predicted and real labels
+            fname_labels = os.path.join(folder, patch, 'predicted_and_real_labels.json')
+            with open(fname_labels, 'r') as f2:
+                dict_labels = json.load(f2)
+            plot_confusion_matrix(dict_labels['real_labels'], dict_labels['pred_probabilities'],
+                                    ['no collision', 'collision'],
+                                    img_name=os.path.join(plot_result_confusion, "confusion_{}.png".format(index)),
+                                    title_name = "patch_{}".format(index))
+            index = index + 1
 
     # all_criterion
