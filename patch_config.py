@@ -39,7 +39,7 @@ class PhysicalPatch(BaseConfig):
 
         self.n_epochs = 100  # 70 is already good
         self.batch_size = 64
-        self.k = 64   # hard-mining
+        self.k = 16   # hard-mining
         self.num_workers = 10
         self.beta = 10
 
@@ -55,8 +55,8 @@ class PhysicalPatch(BaseConfig):
         self.use_old_loss = True  # False or True
 
         self.attack_loss_weight = 1  # origin: 1
-        self.nps_loss_weight = 0.1  # origin: 0.01
-        self.tv_loss_weight = 5  # origin: 2.5
+        self.nps_loss_weight = 10  # origin: 0.01
+        self.tv_loss_weight = 50  # origin: 2.5
 
         self.patch_name = 'PhysicalAttack'
         self.max_tv = 0.165

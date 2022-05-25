@@ -13,6 +13,13 @@ import itertools
 from sklearn.metrics import confusion_matrix
 from sklearn import metrics
 from PIL import Image
+import random
+
+torch.backends.cudnn.deterministic = True
+random.seed(0)
+torch.manual_seed(0)
+torch.cuda.manual_seed(0)
+np.random.seed(0)
 
 class testPatchTransformer(nn.Module):
     """PatchTransformer: transforms batch of patches
@@ -102,9 +109,14 @@ class testPatchTransformer(nn.Module):
         targetoff_x = torch.cuda.FloatTensor([x_off])
         targetoff_y = torch.cuda.FloatTensor([y_off])
         if (rand_loc):
-            off_x = targetoff_x * (torch.cuda.FloatTensor(anglesize).uniform_(0., 1.))
+            off_x = targetoff_x * (torch.cuda.FloatTensor(anglesize).uniform_(-1, 1.))
             target_x = target_x + off_x
-            off_y = targetoff_y * (torch.cuda.FloatTensor(anglesize).uniform_(0., 1.))
+            off_y = targetoff_y * (torch.cuda.FloatTensor(anglesize).uniform_(-1, 1.))
+            target_y = target_y + off_y
+        else:
+            off_x = targetoff_x * (torch.cuda.FloatTensor(anglesize).fill_(1))
+            target_x = target_x + off_x
+            off_y = targetoff_y * (torch.cuda.FloatTensor(anglesize).fill_(1))
             target_y = target_y + off_y
 
         s = adv_batch.size()
@@ -154,7 +166,7 @@ class testPatchApplier(nn.Module):
         return img_batch
 
 def testModel(model, testing_dataloader, test_path, eval_path, is_patch_test, adv_patch,
-                x, y, x_off, y_off, min_scale, max_scale):
+                x, y, x_off, y_off, rotate, random_loc, min_scale, max_scale):
     '''
     tests the model with the following metrics:
 
@@ -192,7 +204,7 @@ def testModel(model, testing_dataloader, test_path, eval_path, is_patch_test, ad
         # patch testing
         if is_patch_test:
             # patch projection
-            adv_batch_t = patch_transformer(adv_patch, steer_true, 200, x, y, x_off, y_off, min_scale, max_scale, do_rotate=True, rand_loc=True)
+            adv_batch_t = patch_transformer(adv_patch, steer_true, 200, x, y, x_off, y_off, min_scale, max_scale, do_rotate=rotate, rand_loc=random_loc)
             p_img_batch = patch_applier(img_cuda, adv_batch_t)
             img_cuda = F.interpolate(p_img_batch, (200, 200))  # Up or Down sample
 
@@ -441,26 +453,30 @@ if __name__ == '__main__':
                                     augmentation=False)
     testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=64, shuffle=True, num_workers=10)
 
-    test_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test11_balance5_nps01_tv5_scale05-10"
-    eval_path = "patch_test99_075_075-random"
+    test_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test15_balance1_nps01_tv5_scale05-05"
+    eval_path = "patch_test38_07_07-centre"
     folder = os.path.exists(os.path.join(test_path, eval_path))
     if not folder:
         os.makedirs(os.path.join(test_path, eval_path))
 
-    patchfile = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test11_balance5_nps01_tv5_scale05-10/patchs/20220522-142943_steer0.0_coll0.0_ep00.png"
+    patchfile = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test15_balance1_nps01_tv5_scale05-05/patchs/20220524-165846_steer0.0_coll0.0_ep38.png"
     adv_patch = Image.open(patchfile).convert('RGB')
     adv_patch = transforms.ToTensor()(adv_patch).cuda()
 
     is_patch_test = True
-    # x, y, x_off, y_off, min_scale, max_scale = 0.095, 0.095, 0.81, 0.81, 0.1, 0.3
-    # x, y, x_off, y_off, min_scale, max_scale = 0.155, 0.155, 0.7, 0.7, 0.5, 0.5
-    x, y, x_off, y_off, min_scale, max_scale = 0.3, 0.3, 0.4, 0.4, 0.75, 0.75
-    # x, y, x_off, y_off, min_scale, max_scale = 0.39, 0.39, 0.23, 0.23, 1.0, 1.3
-    #x, y, x_off, y_off, min_scale, max_scale = 0.5, 0.5, 0., 0., 0.75, 0.75
+    rotate = True
+    random_loc = True
+    # x, y, x_off, y_off, min_scale, max_scale = 0.095, 0.095, 0.81, 0.81, 0.3, 0.3
+    # x, y, x_off, y_off, min_scale, max_scale = 0.155, 0.155, 0.7, 0.7, 0.3, 0.5
+    # x, y, x_off, y_off, min_scale, max_scale = 0.3, 0.3, 0.4, 0.4, 1.0, 1.0
+    # x, y, x_off, y_off, min_scale, max_scale = 0.39, 0.39, 0.23, 0.23, 0.5, 1.3
+    # x, y, x_off, y_off, min_scale, max_scale = 0.5, 0.5, 0., 0., 0.5, 1.7
+
+    x, y, x_off, y_off, min_scale, max_scale = 0.5, 0.5, 0., 0., 0.7, 0.7
 
     with torch.no_grad():
         testModel(dronet, testing_dataloader, test_path, eval_path, is_patch_test, adv_patch,
-                    x, y, x_off, y_off, min_scale, max_scale)
+                    x, y, x_off, y_off, rotate, random_loc, min_scale, max_scale)
 
     # Compute histograms from predicted and real steerings
     fname_steer = os.path.join(test_path, eval_path, 'predicted_and_real_steerings.json')

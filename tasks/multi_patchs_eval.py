@@ -21,7 +21,7 @@ if __name__ == '__main__':
 
     is_patch_test = True
 
-    patchs_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test11_balance5_nps01_tv5_scale03-05"
+    patchs_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test15_balance1_nps01_tv5_scale05-05"
     print("Loaded weights path: ", patchs_path)
     folder = os.path.join(patchs_path, "multi_patchs_eval_result")
     if not os.path.exists(folder):

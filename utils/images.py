@@ -27,8 +27,8 @@ class PatchTransformer(nn.Module):
         self.max_contrast = 1.2  # 1.2
         self.min_brightness = -0.1  # -0.1
         self.max_brightness = 0.1  # 0.1
-        self.min_scale = 0.3  # Scale the patch size from (patch_size * min_scale) to (patch_size * max_scale)
-        self.max_scale = 1.3
+        self.min_scale = 0.5  # Scale the patch size from (patch_size * min_scale) to (patch_size * max_scale)
+        self.max_scale = 1.0
         self.noise_factor = 0.1
         self.minangle = -10 / 180 * math.pi
         self.maxangle = 10 / 180 * math.pi
@@ -95,16 +95,15 @@ class PatchTransformer(nn.Module):
             angle = torch.cuda.FloatTensor(anglesize).fill_(0)
 
         # Resizes and rotates
-        target_x = torch.cuda.FloatTensor([0.39])
-        target_y = torch.cuda.FloatTensor([0.39])
-        targetoff_x = torch.cuda.FloatTensor([0.23])
-        targetoff_y = torch.cuda.FloatTensor([0.23])
+        target_x = torch.cuda.FloatTensor([0.5])
+        target_y = torch.cuda.FloatTensor([0.5])
+        targetoff_x = torch.cuda.FloatTensor([0.05])
+        targetoff_y = torch.cuda.FloatTensor([0.05])
         if (rand_loc):
-            off_x = targetoff_x * (torch.cuda.FloatTensor(anglesize).uniform_(0, 1))
+            off_x = targetoff_x * (torch.cuda.FloatTensor(anglesize).uniform_(-4, 4))
             target_x = target_x + off_x
-            off_y = targetoff_y * (torch.cuda.FloatTensor(anglesize).uniform_(0, 1))
+            off_y = targetoff_y * (torch.cuda.FloatTensor(anglesize).uniform_(-4, 4))
             target_y = target_y + off_y
-        # target_y = target_y - 0.05
 
         s = adv_batch.size()
         adv_batch = adv_batch.view(s[0] * s[1], s[2], s[3], s[4])

@@ -14,6 +14,12 @@ import matplotlib.pyplot as plt
 import itertools
 from sklearn.metrics import confusion_matrix
 
+torch.backends.cudnn.deterministic = True
+random.seed(0)
+torch.manual_seed(0)
+torch.cuda.manual_seed(0)
+np.random.seed(0)
+
 
 def testModel(model, testing_dataloader, test_path, eval_path, is_patch_test, adv_patch):
     '''

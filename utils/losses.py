@@ -28,8 +28,8 @@ class Attack_Loss(nn.Module):
     def targeted_attack_loss(self, k, steer_true, steer_pred, coll_true, coll_pred, steer_target, coll_target,
                              use_old_loss, beta):
         # Steer angle: steer_target = torch.cuda.FloatTensor(torch.Size((steer_true.size(0), 1))).fill_(steer_target)
-        balance_steer = 5
-        balance_coll = 5
+        balance_steer = 1
+        balance_coll = 1
         target_steer = steer_true.clone()
         target_steer[:, 1] = steer_target
         target_coll = steer_true.clone()
@@ -40,7 +40,7 @@ class Attack_Loss(nn.Module):
             # collision: coll_target = torch.cuda.FloatTensor(torch.Size((coll_true.size(0), 1))).fill_(coll_target)
             loss3 = self.old_hard_mining_entropy(k, coll_true, coll_pred)
             loss4 = self.old_hard_mining_entropy(k, target_coll, coll_pred)
-            return torch.mean((-loss1 + balance_steer * loss2) + beta * (-loss3 + balance_coll * loss4))
+            return torch.mean((1 / loss1 + balance_steer * loss2) + beta * (1 / loss3 + balance_coll * loss4))
         else:
             loss1 = self.hard_mining_mse(k, steer_true, steer_pred)
             loss2 = self.hard_mining_mse(k, target_steer, steer_pred)

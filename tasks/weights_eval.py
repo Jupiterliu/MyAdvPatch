@@ -13,7 +13,7 @@ if __name__ == '__main__':
                                     augmentation=False)
     testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=64, shuffle=True, num_workers=10)
 
-    env_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/test7_RGB_new_loss_beta20"
+    env_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/test8_RGB_new_loss_beta50"
     models_path = os.path.join(env_path, "models")
     # print("Loaded weights path: ", models_path)
     folder = os.path.join(env_path, "multi_patchs_eval_result")

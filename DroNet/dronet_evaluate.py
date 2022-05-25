@@ -10,7 +10,7 @@ if __name__ == '__main__':
     image_mode = "rgb"
     # weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/test4_GRAY_new_loss_500/weights_070.pth"
     # weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/test3_RGB_old_loss_500/weights_435.pth"
-    weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/test2_RGB_new_loss_500/models/weights_288.pth"
+    weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/best_model_RGB/test8_weights_346.pth"
     dronet = getModel((200, 200), image_mode, 1, weights_path)
     # print(dronet)
     dronet = dronet.eval().cuda()
@@ -19,8 +19,8 @@ if __name__ == '__main__':
     testing_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'testing', image_mode, augmentation=False)
     testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=16, shuffle=True, num_workers=10)
 
-    test_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/test2_RGB_new_loss_500"
-    eval_path = "evaluation_288"
+    test_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/best_model_RGB"
+    eval_path = "evaluation_346"
     folder = os.path.exists(os.path.join(test_path, eval_path))
     if not folder:
         os.makedirs(os.path.join(test_path, eval_path))

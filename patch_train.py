@@ -27,7 +27,7 @@ class PatchTrainer(object):
         self.config = patch_config.patch_configs[mode]()
 
         # Load DroNet model from .pth & eval()
-        best_weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/best_model_RGB/test3_weights_484.pth"
+        best_weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/best_model_RGB/test8_weights_346.pth"
         self.dronet_model = getModel((200, 200), self.config.image_mode, 1, best_weights_path)
         self.dronet_model = self.dronet_model.eval().cuda()
 
@@ -72,7 +72,7 @@ class PatchTrainer(object):
         # print(f'One epoch is {len(training_dataloader)}')
 
         root_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch"
-        saved_patch_name = "test12_balance5_nps01_tv5_scale03-13"
+        saved_patch_name = "test1_balance1_nps10_tv50_scale05-10"
         patch_path = os.path.join(root_path, saved_patch_name, "patchs")
         if not os.path.exists(patch_path):
             os.makedirs(patch_path)
