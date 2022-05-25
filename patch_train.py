@@ -61,6 +61,10 @@ class PatchTrainer(object):
 
         # Generate starting point: patch(gray or random)
         adv_patch_cpu = self.generate_patch("gray")  # gray or random
+
+        # adv_patch_circle = self.init_patch_circle(200, math.pi)
+        # adv_patch_cpu =  torch.from_numpy(adv_patch_circle)
+
         adv_patch_cpu.requires_grad_(True)
 
         # Load my data from collision testing
@@ -71,8 +75,8 @@ class PatchTrainer(object):
         self.epoch_length = len(training_dataloader)
         # print(f'One epoch is {len(training_dataloader)}')
 
-        root_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch"
-        saved_patch_name = "test1_balance1_nps10_tv50_scale05-10"
+        root_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch_100"
+        saved_patch_name = "test2_k64_balance5-1_nps01_tv5_scale05-05"
         patch_path = os.path.join(root_path, saved_patch_name, "patchs")
         if not os.path.exists(patch_path):
             os.makedirs(patch_path)
@@ -175,7 +179,7 @@ class PatchTrainer(object):
             scheduler.step(ep_loss)
             if True:
                 print('   EPOCH NR: ', epoch),
-                print(' EPOCH LOSS: ', ep_loss)
+                print(' EPOCH LOSS: ', ep_loss.item())
                 print('ATTACK LOSS: ', ep_attack_loss)
                 print('   NPS LOSS: ', ep_nps_loss)
                 print('    TV LOSS: ', ep_tv_loss)
@@ -197,6 +201,22 @@ class PatchTrainer(object):
             adv_patch_cpu = torch.rand((3, self.config.patch_size, self.config.patch_size))
 
         return adv_patch_cpu
+
+    def init_patch_circle(self, image_size, patch_size):
+        image_size = image_size ** 2
+        noise_size = image_size * patch_size
+        radius = int(math.sqrt(noise_size / math.pi) / 2)
+        patch = np.zeros((1, 3, radius * 2, radius * 2))
+        for i in range(3):
+            a = np.zeros((radius * 2, radius * 2))
+            cx, cy = radius, radius  # The center of circle
+            y, x = np.ogrid[-radius: radius, -radius: radius]
+            index = x ** 2 + y ** 2 <= radius ** 2
+            a[cy - radius:cy + radius, cx - radius:cx + radius][index] = np.random.rand()
+            idx = np.flatnonzero((a == 0).all((1)))
+            a = np.delete(a, idx, axis=0)
+            patch[0][i] = np.delete(a, idx, axis=1)
+        return patch.reshape(3, radius * 2, radius * 2)
 
 def main():
     if len(sys.argv) != 2:

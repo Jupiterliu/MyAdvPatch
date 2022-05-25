@@ -36,8 +36,8 @@ class testPatchTransformer(nn.Module):
         self.max_contrast = 1.2  # 1.2
         self.min_brightness = -0.1  # -0.1
         self.max_brightness = 0.1  # 0.1
-        self.min_scale = 1.0  # Scale the patch size from (patch_size * min_scale) to (patch_size * max_scale)
-        self.max_scale = 1.7
+        self.min_scale = 0.5  # Scale the patch size from (patch_size * min_scale) to (patch_size * max_scale)
+        self.max_scale = 0.5
         self.noise_factor = 0.1
         self.minangle = -10 / 180 * math.pi
         self.maxangle = 10 / 180 * math.pi
@@ -109,9 +109,9 @@ class testPatchTransformer(nn.Module):
         targetoff_x = torch.cuda.FloatTensor([x_off])
         targetoff_y = torch.cuda.FloatTensor([y_off])
         if (rand_loc):
-            off_x = targetoff_x * (torch.cuda.FloatTensor(anglesize).uniform_(-1, 1.))
+            off_x = targetoff_x * (torch.cuda.FloatTensor(anglesize).uniform_(-7, 7.))
             target_x = target_x + off_x
-            off_y = targetoff_y * (torch.cuda.FloatTensor(anglesize).uniform_(-1, 1.))
+            off_y = targetoff_y * (torch.cuda.FloatTensor(anglesize).uniform_(-7, 7.))
             target_y = target_y + off_y
         else:
             off_x = targetoff_x * (torch.cuda.FloatTensor(anglesize).fill_(1))
@@ -443,7 +443,7 @@ def plot_confusion_matrix(real_labels, pred_prob, classes, normalize=False, img_
 
 if __name__ == '__main__':
     image_mode = "rgb"
-    best_weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/best_model_RGB/test3_weights_484.pth"
+    best_weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/best_model_RGB/test8_weights_346.pth"
     dronet = getModel((200, 200), image_mode, 1, best_weights_path)
     # print(dronet)
     dronet = dronet.eval().cuda()
@@ -453,13 +453,13 @@ if __name__ == '__main__':
                                     augmentation=False)
     testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=64, shuffle=True, num_workers=10)
 
-    test_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test15_balance1_nps01_tv5_scale05-05"
-    eval_path = "patch_test38_07_07-centre"
+    test_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test2_k64_balance10-10_nps01_tv5_scale05-05"
+    eval_path = "patch_test44_05_05-random"
     folder = os.path.exists(os.path.join(test_path, eval_path))
     if not folder:
         os.makedirs(os.path.join(test_path, eval_path))
 
-    patchfile = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test15_balance1_nps01_tv5_scale05-05/patchs/20220524-165846_steer0.0_coll0.0_ep38.png"
+    patchfile = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test2_k64_balance10-10_nps01_tv5_scale05-05/patchs/20220525-134106_steer0.5_coll1_ep00.png"
     adv_patch = Image.open(patchfile).convert('RGB')
     adv_patch = transforms.ToTensor()(adv_patch).cuda()
 
@@ -472,7 +472,8 @@ if __name__ == '__main__':
     # x, y, x_off, y_off, min_scale, max_scale = 0.39, 0.39, 0.23, 0.23, 0.5, 1.3
     # x, y, x_off, y_off, min_scale, max_scale = 0.5, 0.5, 0., 0., 0.5, 1.7
 
-    x, y, x_off, y_off, min_scale, max_scale = 0.5, 0.5, 0., 0., 0.7, 0.7
+    # x, y, x_off, y_off, min_scale, max_scale = 0.5, 0.5, 0., 0., 1.0, 1.0
+    x, y, x_off, y_off, min_scale, max_scale = 0.5, 0.5, 0.05, 0.05, 0.5, 0.5
 
     with torch.no_grad():
         testModel(dronet, testing_dataloader, test_path, eval_path, is_patch_test, adv_patch,

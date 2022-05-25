@@ -23,12 +23,12 @@ class PatchTransformer(nn.Module):
 
     def __init__(self):
         super(PatchTransformer, self).__init__()
-        self.min_contrast = 0.8  # 0.8
-        self.max_contrast = 1.2  # 1.2
-        self.min_brightness = -0.1  # -0.1
-        self.max_brightness = 0.1  # 0.1
+        self.min_contrast = 0.6  # 0.8
+        self.max_contrast = 1.4  # 1.2
+        self.min_brightness = -0.3  # -0.1
+        self.max_brightness = 0.3  # 0.1
         self.min_scale = 0.5  # Scale the patch size from (patch_size * min_scale) to (patch_size * max_scale)
-        self.max_scale = 1.0
+        self.max_scale = 0.5
         self.noise_factor = 0.1
         self.minangle = -10 / 180 * math.pi
         self.maxangle = 10 / 180 * math.pi
@@ -100,9 +100,9 @@ class PatchTransformer(nn.Module):
         targetoff_x = torch.cuda.FloatTensor([0.05])
         targetoff_y = torch.cuda.FloatTensor([0.05])
         if (rand_loc):
-            off_x = targetoff_x * (torch.cuda.FloatTensor(anglesize).uniform_(-4, 4))
+            off_x = targetoff_x * (torch.cuda.FloatTensor(anglesize).uniform_(-7, 7))
             target_x = target_x + off_x
-            off_y = targetoff_y * (torch.cuda.FloatTensor(anglesize).uniform_(-4, 4))
+            off_y = targetoff_y * (torch.cuda.FloatTensor(anglesize).uniform_(-7, 7))
             target_y = target_y + off_y
 
         s = adv_batch.size()

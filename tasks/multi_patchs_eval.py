@@ -15,13 +15,13 @@ if __name__ == '__main__':
                                     augmentation=False)
     testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=64, shuffle=True, num_workers=10)
 
-    weight_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/best_model_RGB/test3_weights_484.pth"
+    weight_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/best_model_RGB/test8_weights_346.pth"
     dronet = getModel((200, 200), image_mode, 1, weight_path)
     dronet = dronet.eval().cuda()
 
     is_patch_test = True
 
-    patchs_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test15_balance1_nps01_tv5_scale05-05"
+    patchs_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test2_k64_balance10-10_nps01_tv5_scale05-05"
     print("Loaded weights path: ", patchs_path)
     folder = os.path.join(patchs_path, "multi_patchs_eval_result")
     if not os.path.exists(folder):
