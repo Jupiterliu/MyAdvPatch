@@ -8,12 +8,12 @@ from utils.evaluation import *
 
 if __name__ == '__main__':
     # Load testing data
-    image_mode = "rgb"
+    image_mode = "gray"
     testing_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'testing', image_mode,
                                     augmentation=False)
     testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=64, shuffle=True, num_workers=10)
 
-    env_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/test8_RGB_new_loss_beta50"
+    env_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/test9_GRAY_new_loss_beta50"
     models_path = os.path.join(env_path, "models")
     # print("Loaded weights path: ", models_path)
     folder = os.path.join(env_path, "multi_patchs_eval_result")
@@ -65,7 +65,7 @@ if __name__ == '__main__':
             plot_confusion_matrix(dict_labels['real_labels'], dict_labels['pred_probabilities'],
                                     ['no collision', 'collision'],
                                     img_name=os.path.join(plot_result_confusion, "confusion_{}.png".format(index)),
-                                    title_name = "patch_{}".format(index))
+                                    title_name = "patch_{}".format(index), ishow = False)
             index = index + 1
 
     # all_criterion

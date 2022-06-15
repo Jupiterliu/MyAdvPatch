@@ -76,7 +76,7 @@ class PatchTrainer(object):
         # print(f'One epoch is {len(training_dataloader)}')
 
         root_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch_100"
-        saved_patch_name = "test2_k64_balance5-1_nps01_tv5_scale05-05"
+        saved_patch_name = "test3_k64_balance10-10_nps01_tv5_scale05-05"
         patch_path = os.path.join(root_path, saved_patch_name, "patchs")
         if not os.path.exists(patch_path):
             os.makedirs(patch_path)

@@ -255,7 +255,7 @@ def make_and_save_histograms(pred_steerings, real_steerings, img_name="histogram
     plt.savefig(img_name, bbox_inches='tight')
 
 
-def plot_confusion_matrix(real_labels, pred_prob, classes, normalize=False, img_name="confusion.png", title_name = None):
+def plot_confusion_matrix(real_labels, pred_prob, classes, normalize=False, img_name="confusion.png", title_name = None, ishow = True):
     """
     Plot and save confusion matrix computed from predicted and real labels.
 
@@ -293,4 +293,5 @@ def plot_confusion_matrix(real_labels, pred_prob, classes, normalize=False, img_
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
     plt.savefig(img_name)
-    plt.show()
+    if ishow:
+        plt.show()
