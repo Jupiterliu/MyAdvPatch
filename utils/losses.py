@@ -41,7 +41,7 @@ class Attack_Loss(nn.Module):
             loss3 = self.old_hard_mining_entropy(k, coll_true, coll_pred)
             loss4 = self.old_hard_mining_entropy(k, target_coll, coll_pred)
             # print("loss1: ", loss1.item(), "loss2: ", loss2.item(), "loss3: ", loss3.item(), "loss4: ", loss4.item())
-            return torch.mean((- loss1 + balance_steer * loss2) + beta * (- loss3 + balance_coll * loss4))
+            return torch.mean((loss2) + beta * (loss4))
         else:
             loss1 = self.hard_mining_mse(k, steer_true, steer_pred)
             loss2 = self.hard_mining_mse(k, target_steer, steer_pred)

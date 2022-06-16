@@ -75,8 +75,8 @@ class PatchTrainer(object):
         self.epoch_length = len(training_dataloader)
         # print(f'One epoch is {len(training_dataloader)}')
 
-        root_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch_100"
-        saved_patch_name = "test3_k64_balance10-10_nps01_tv5_scale05-05"
+        root_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch"
+        saved_patch_name = "test4_k64_beta10_nps001_t25_scale03-05"
         patch_path = os.path.join(root_path, saved_patch_name, "patchs")
         if not os.path.exists(patch_path):
             os.makedirs(patch_path)
@@ -93,9 +93,9 @@ class PatchTrainer(object):
             ep_tv_loss = 0
             ep_loss = 0
             bt0 = time.time()
-            # other_val = (1 - torch.exp(torch.Tensor([-1 * (0.1) * (epoch - self.config.beta)]))).float().cuda()
-            # beta = torch.max(torch.Tensor([0]).float().cuda(), other_val)
-            beta = torch.Tensor([1.0]).float().cuda()
+            other_val = (self.config.gamma - torch.exp(torch.Tensor([-1 * (0.1) * (epoch - self.config.beta)]))).float().cuda()
+            beta = torch.max(torch.Tensor([0]).float().cuda(), other_val)
+            # beta = torch.Tensor([1.0]).float().cuda()
             for i_batch, (img_batch, steer_true, coll_true) in tqdm(enumerate(training_dataloader),
                                                                     desc=f'Running epoch {epoch}', total=self.epoch_length):
                 with autograd.detect_anomaly():

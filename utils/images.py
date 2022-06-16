@@ -23,11 +23,11 @@ class PatchTransformer(nn.Module):
 
     def __init__(self):
         super(PatchTransformer, self).__init__()
-        self.min_contrast = 0.6  # 0.8
-        self.max_contrast = 1.4  # 1.2
-        self.min_brightness = -0.3  # -0.1
-        self.max_brightness = 0.3  # 0.1
-        self.min_scale = 0.5  # Scale the patch size from (patch_size * min_scale) to (patch_size * max_scale)
+        self.min_contrast = 0.7  # 0.8
+        self.max_contrast = 1.3  # 1.2
+        self.min_brightness = -0.2  # -0.1
+        self.max_brightness = 0.2  # 0.1
+        self.min_scale = 0.3  # Scale the patch size from (patch_size * min_scale) to (patch_size * max_scale)
         self.max_scale = 0.5
         self.noise_factor = 0.1
         self.minangle = -10 / 180 * math.pi

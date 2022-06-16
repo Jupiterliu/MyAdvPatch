@@ -12,22 +12,22 @@ from utils.evaluation import *
 
 if __name__ == '__main__':
     image_mode = "rgb"
-    best_weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/best_model_RGB/test3_weights_484.pth"
+    best_weights_path = "/root/Python_Program_Remote/MyAdvPatch/DroNet/saved_model/best_model_RGB/test8_weights_346.pth"
     dronet = getModel((200, 200), image_mode, 1, best_weights_path)
     # print(dronet)
     dronet = dronet.eval().cuda()
 
     # Load testing data
-    testing_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'training', image_mode ,augmentation=False)
+    testing_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'testing', image_mode ,augmentation=False)
     testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=64, shuffle=True, num_workers=10)
 
-    test_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test11_balance5_nps01_tv5_scale01-05"
-    eval_path = "patch_test11"
+    test_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test4_k64_beta10_nps001_t25_scale03-05"
+    eval_path = "patch_test02_03-05"
     folder  = os.path.exists(os.path.join(test_path, eval_path))
     if not folder:
         os.makedirs(os.path.join(test_path, eval_path))
 
-    patchfile = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test11_balance5_nps01_tv5_scale01-05/patchs/20220522-142707_steer0.0_coll0.0_ep11.png"
+    patchfile = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test4_k64_beta10_nps001_t25_scale03-05/patchs/20220615-220627_steer0.0_coll0.0_ep02.png"
     adv_patch = Image.open(patchfile).convert('RGB')
     adv_patch = transforms.ToTensor()(adv_patch).cuda()
 
@@ -36,17 +36,17 @@ if __name__ == '__main__':
     with torch.no_grad():
         testModel(dronet, testing_dataloader, test_path, eval_path, is_patch_test, adv_patch)
 
-    # Compute histograms from predicted and real steerings
-    fname_steer = os.path.join(test_path, eval_path, 'predicted_and_real_steerings.json')
-    with open(fname_steer, 'r') as f1:
-        dict_steerings = json.load(f1)
-    make_and_save_histograms(dict_steerings['pred_steerings'], dict_steerings['real_steerings'],
-                                os.path.join(test_path, eval_path, "histograms.png"), title_name = "patch_test11")
+        # Compute histograms from predicted and real steerings
+        fname_steer = os.path.join(test_path, eval_path, 'predicted_and_real_steerings.json')
+        with open(fname_steer, 'r') as f1:
+            dict_steerings = json.load(f1)
+        make_and_save_histograms(dict_steerings['pred_steerings'], dict_steerings['real_steerings'],
+                                    os.path.join(test_path, eval_path, "histograms.png"), title_name = eval_path)
 
-    # Compute confusion matrix from predicted and real labels
-    fname_labels = os.path.join(test_path, eval_path, 'predicted_and_real_labels.json')
-    with open(fname_labels, 'r') as f2:
-        dict_labels = json.load(f2)
-    plot_confusion_matrix(dict_labels['real_labels'], dict_labels['pred_probabilities'],
-                            ['no collision', 'collision'],
-                            img_name=os.path.join(test_path, eval_path, "confusion.png"), title_name = "patch_test11")
+        # Compute confusion matrix from predicted and real labels
+        fname_labels = os.path.join(test_path, eval_path, 'predicted_and_real_labels.json')
+        with open(fname_labels, 'r') as f2:
+            dict_labels = json.load(f2)
+        plot_confusion_matrix(dict_labels['real_labels'], dict_labels['pred_probabilities'],
+                                ['no collision', 'collision'],
+                                img_name=os.path.join(test_path, eval_path, "confusion.png"), title_name = eval_path)

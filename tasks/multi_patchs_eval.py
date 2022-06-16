@@ -21,8 +21,8 @@ if __name__ == '__main__':
 
     is_patch_test = True
 
-    patchs_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch_100/test3_k64_balance10-10_nps01_tv5_scale05-05"
-    print("Loaded weights path: ", patchs_path)
+    patchs_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test4_k64_beta10_nps001_t25_scale03-05"
+    print("Loaded patches path: ", patchs_path)
     folder = os.path.join(patchs_path, "multi_patchs_eval_result")
     if not os.path.exists(folder):
         os.makedirs(folder)
