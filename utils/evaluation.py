@@ -59,7 +59,7 @@ def testModel(model, testing_dataloader, test_path, eval_path, is_patch_test, ad
         # patch testing
         if is_patch_test:
             # patch projection
-            adv_batch_t = patch_transformer(adv_patch, steer_true, 200, do_rotate=True, rand_loc=True)
+            adv_batch_t = patch_transformer(adv_patch, steer_true, 200, do_rotate=True, rand_loc=False)
             p_img_batch = patch_applier(img_cuda, adv_batch_t)
             img_cuda = F.interpolate(p_img_batch, (200, 200))  # Up or Down sample
 
@@ -275,6 +275,57 @@ def plot_confusion_matrix(real_labels, pred_prob, classes, normalize=False, img_
     cm = confusion_matrix(real_labels, pred_labels)
     plt.figure()
     plt.title(title_name)
+    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+    # plt.title("Confusion matrix")
+    plt.colorbar()
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes)
+    plt.yticks(tick_marks, classes, rotation=90)
+
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+
+    thresh = cm.max() / 2.
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        plt.text(j, i, cm[i, j], horizontalalignment="center", color="white" if cm[i, j] > thresh else "black")
+
+    plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    plt.savefig(img_name)
+    if ishow:
+        plt.show()
+
+
+def plot_attack_confusion_matrix(real_labels, pred_prob, classes, attack_mode, normalize=True, img_name="confusion.png", title_name = None, ishow = True):
+    """
+    Plot and save confusion matrix computed from predicted and real labels.
+
+        # Arguments
+        real_labels: List of real labels.
+        pred_prob: List of predicted probabilities.
+        normalize: Boolean, whether to apply normalization.
+        img_name: Name of the png file to save the figure.
+    """
+    real_labels = np.array(real_labels)
+
+    # Binarize predicted probabilities
+    pred_prob = np.array(pred_prob)
+    pred_labels = np.zeros_like(pred_prob)
+    pred_labels[pred_prob >= 0.5] = 1
+
+    cm = confusion_matrix(real_labels, pred_labels)
+    # if attack_mode == "hiding_attack":
+    #     asr = cm[1, 0] / (cm[1, 0] + cm[1, 1])
+    #     title_name = title_name + "ASR" + str(asr)
+    # elif attack_mode == "yaw_attack":
+    #     asr = cm[1, 0] / (cm[1, 0] + cm[1, 1])
+    #     title_name = title_name + "ASR" + str(asr)
+    # else:
+    #     asr = cm[0, 1] / (cm[0, 1] + cm[0, 0])
+    #     title_name = title_name + ", ASR-" + str(asr)
+    plt.figure()
+    plt.title(attack_mode + ":" + title_name)
     plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
     # plt.title("Confusion matrix")
     plt.colorbar()

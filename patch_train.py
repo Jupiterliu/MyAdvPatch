@@ -68,7 +68,7 @@ class PatchTrainer(object):
         adv_patch_cpu.requires_grad_(True)
 
         # Load my data from collision testing
-        training_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'training',
+        training_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'testing',
                                             self.config.image_mode, augmentation=False)
         training_dataloader = torch.utils.data.DataLoader(training_dataset, batch_size=self.config.batch_size,
                                                             shuffle=True, num_workers=self.config.num_workers)
@@ -76,7 +76,7 @@ class PatchTrainer(object):
         # print(f'One epoch is {len(training_dataloader)}')
 
         root_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch"
-        saved_patch_name = "test4_k64_beta10_nps001_t25_scale03-05"
+        saved_patch_name = "test10_k64_balance1_nobeta_nps001_t25_scale01-17"
         patch_path = os.path.join(root_path, saved_patch_name, "patchs")
         if not os.path.exists(patch_path):
             os.makedirs(patch_path)
@@ -93,9 +93,9 @@ class PatchTrainer(object):
             ep_tv_loss = 0
             ep_loss = 0
             bt0 = time.time()
-            other_val = (self.config.gamma - torch.exp(torch.Tensor([-1 * (0.1) * (epoch - self.config.beta)]))).float().cuda()
-            beta = torch.max(torch.Tensor([0]).float().cuda(), other_val)
-            # beta = torch.Tensor([1.0]).float().cuda()
+            # other_val = (self.config.gamma - torch.exp(torch.Tensor([-1 * (0.1) * (epoch - self.config.beta)]))).float().cuda()
+            # beta = torch.max(torch.Tensor([0]).float().cuda(), other_val)
+            beta = torch.Tensor([1.0]).float().cuda()
             for i_batch, (img_batch, steer_true, coll_true) in tqdm(enumerate(training_dataloader),
                                                                     desc=f'Running epoch {epoch}', total=self.epoch_length):
                 with autograd.detect_anomaly():
@@ -108,7 +108,7 @@ class PatchTrainer(object):
                     # patch projection
                     if self.config.image_mode == "gray":
                         adv_patch = transforms.Grayscale()(adv_patch)
-                    adv_batch_t = self.patch_transformer(adv_patch, steer_true, self.config.image_size, do_rotate=True, rand_loc=True)
+                    adv_batch_t = self.patch_transformer(adv_patch, steer_true, self.config.image_size, do_rotate=True, rand_loc=False)
                     p_img_batch = self.patch_applier(img_batch, adv_batch_t)
                     p_img_batch = F.interpolate(p_img_batch, (200, 200))  # Up or Down sample
 

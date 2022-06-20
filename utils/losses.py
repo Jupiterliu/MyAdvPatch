@@ -41,7 +41,7 @@ class Attack_Loss(nn.Module):
             loss3 = self.old_hard_mining_entropy(k, coll_true, coll_pred)
             loss4 = self.old_hard_mining_entropy(k, target_coll, coll_pred)
             # print("loss1: ", loss1.item(), "loss2: ", loss2.item(), "loss3: ", loss3.item(), "loss4: ", loss4.item())
-            return torch.mean((loss2) + beta * (loss4))
+            return torch.mean((balance_steer * loss2) + beta * (balance_coll * loss4))
         else:
             loss1 = self.hard_mining_mse(k, steer_true, steer_pred)
             loss2 = self.hard_mining_mse(k, target_steer, steer_pred)
@@ -152,6 +152,7 @@ class NPS_Loss(nn.Module):
         # calculate the nps by summing over all pixels
         nps_score = torch.sum(color_dist_prod, 0)
         nps_score = torch.sum(nps_score, 0)
+
         return nps_score / torch.numel(adv_patch)
 
     def get_printability_array(self, printability_file, side):
@@ -189,9 +190,11 @@ class TV_Loss(nn.Module):
 
     def forward(self, adv_patch):
         # bereken de total variation van de adv_patch
+
         tvcomp1 = torch.sum(torch.abs(adv_patch[:, :, 1:] - adv_patch[:, :, :-1] + 0.000001), 0)
         tvcomp1 = torch.sum(torch.sum(tvcomp1, 0), 0)
         tvcomp2 = torch.sum(torch.abs(adv_patch[:, 1:, :] - adv_patch[:, :-1, :] + 0.000001), 0)
         tvcomp2 = torch.sum(torch.sum(tvcomp2, 0), 0)
         tv = tvcomp1 + tvcomp2
+
         return tv / torch.numel(adv_patch)
