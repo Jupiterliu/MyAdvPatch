@@ -15,8 +15,8 @@ class BaseConfig(object):
         self.testing_dir = "/root/Python_Program_Remote/MyAdvPatch/datasets_png/testing"
         self.weightfile = "weights/yolo.weights"
         self.printfile = "non_printability/30values.txt"
-        self.patch_size = 300
-        self.image_size = 416
+        self.patch_size = 200
+        self.image_size = 200
 
         self.start_learning_rate = 0.03
 
