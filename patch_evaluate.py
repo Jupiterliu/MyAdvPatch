@@ -22,13 +22,13 @@ if __name__ == '__main__':
     testing_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'testing', image_mode ,augmentation=False)
     testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=64, shuffle=True, num_workers=10)
 
-    test_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test8_k64_balance1000_beta40_nps01_t5_scale01-17"
-    eval_path = "patch_test94_04-04"
+    test_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test10_k64_balance1_nobeta_nps001_t25_scale01-17"
+    eval_path = "patch_test94_01-17"
     folder  = os.path.exists(os.path.join(test_path, eval_path))
     if not folder:
         os.makedirs(os.path.join(test_path, eval_path))
 
-    patchfile = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test8_k64_balance1000_beta40_nps01_t5_scale01-17/patchs/20220616-224627_steer0.0_coll0.0_ep94.png"
+    patchfile = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test10_k64_balance1_nobeta_nps001_t25_scale01-17/patchs/20220617-114556_steer0.0_coll0.0_ep94.png"
     adv_patch = Image.open(patchfile).convert('RGB')
     adv_patch = transforms.ToTensor()(adv_patch).cuda()
 
@@ -41,7 +41,7 @@ if __name__ == '__main__':
         fname_steer = os.path.join(test_path, eval_path, 'predicted_and_real_steerings.json')
         with open(fname_steer, 'r') as f1:
             dict_steerings = json.load(f1)
-        make_and_save_histograms(dict_steerings['pred_steerings'], dict_steerings['real_steerings'],
+        make_and_save_attack_histograms(dict_steerings['pred_steerings'], dict_steerings['real_steerings'],
                                     os.path.join(test_path, eval_path, "histograms.png"), title_name = eval_path)
 
         # Compute confusion matrix from predicted and real labels

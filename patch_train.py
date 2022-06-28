@@ -68,7 +68,7 @@ class PatchTrainer(object):
         adv_patch_cpu.requires_grad_(True)
 
         # Load my data from collision testing
-        training_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'testing',
+        training_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'training',
                                             self.config.image_mode, augmentation=False)
         training_dataloader = torch.utils.data.DataLoader(training_dataset, batch_size=self.config.batch_size,
                                                             shuffle=True, num_workers=self.config.num_workers)

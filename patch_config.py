@@ -37,7 +37,7 @@ class HA(BaseConfig):
     def __init__(self):
         super().__init__()
 
-        self.n_epochs = 100  # 70 is already good
+        self.n_epochs = 120  # 70 is already good
         self.batch_size = 64
         self.k = 64   # hard-mining
         self.num_workers = 10

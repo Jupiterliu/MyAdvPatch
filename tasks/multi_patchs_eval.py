@@ -58,7 +58,7 @@ if __name__ == '__main__':
             fname_steer = os.path.join(folder, patch, 'predicted_and_real_steerings.json')
             with open(fname_steer, 'r') as f1:
                 dict_steerings = json.load(f1)
-            make_and_save_histograms(dict_steerings['pred_steerings'], dict_steerings['real_steerings'],
+            make_and_save_attack_histograms(dict_steerings['pred_steerings'], dict_steerings['real_steerings'],
                                         os.path.join(plot_result_histograms, "histograms_{}.png".format(index)),
                                         title_name = "patch_{}".format(index))
 
@@ -66,7 +66,7 @@ if __name__ == '__main__':
             fname_labels = os.path.join(folder, patch, 'predicted_and_real_labels.json')
             with open(fname_labels, 'r') as f2:
                 dict_labels = json.load(f2)
-            plot_confusion_matrix(dict_labels['real_labels'], dict_labels['pred_probabilities'],
+            plot_attack_confusion_matrix(dict_labels['real_labels'], dict_labels['pred_probabilities'],
                                     ['no collision', 'collision'],
                                     img_name=os.path.join(plot_result_confusion, "confusion_{}.png".format(index)),
                                     title_name = "patch_{}".format(index), ishow=False)
