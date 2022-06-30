@@ -11,6 +11,7 @@ import json
 if __name__ == '__main__':
     # Load testing data
     image_mode = "rgb"
+    attack_mode = "HA"  # yaw_attack, collision_attack
     testing_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'testing', image_mode,
                                     augmentation=False)
     testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=64, shuffle=True, num_workers=10)
@@ -23,6 +24,7 @@ if __name__ == '__main__':
 
     patchs_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test10_k64_balance1_nobeta_nps001_t25_scale01-17"
     print("Loaded patches path: ", patchs_path)
+    eval_path = "scale_01-17-centre"
     folder = os.path.join(patchs_path, "multi_patchs_eval_result")
     if not os.path.exists(folder):
         os.makedirs(folder)
@@ -54,22 +56,16 @@ if __name__ == '__main__':
             all_criterion[index, 6] = f_score
             np.savetxt(os.path.join(folder, 'patchs_criterion.txt'), all_criterion, fmt="%f")
 
-            # Compute histograms from predicted and real steerings
+            # Compute histograms from predicted and real steerings; confusion matrix from predicted and real labels
             fname_steer = os.path.join(folder, patch, 'predicted_and_real_steerings.json')
             with open(fname_steer, 'r') as f1:
                 dict_steerings = json.load(f1)
-            make_and_save_attack_histograms(dict_steerings['pred_steerings'], dict_steerings['real_steerings'],
-                                        os.path.join(plot_result_histograms, "histograms_{}.png".format(index)),
-                                        title_name = "patch_{}".format(index))
-
-            # Compute confusion matrix from predicted and real labels
             fname_labels = os.path.join(folder, patch, 'predicted_and_real_labels.json')
             with open(fname_labels, 'r') as f2:
                 dict_labels = json.load(f2)
-            plot_attack_confusion_matrix(dict_labels['real_labels'], dict_labels['pred_probabilities'],
-                                    ['no collision', 'collision'],
-                                    img_name=os.path.join(plot_result_confusion, "confusion_{}.png".format(index)),
-                                    title_name = "patch_{}".format(index), ishow=False)
+            evaluation_metrics(dict_steerings['pred_steerings'], dict_steerings['real_steerings'],
+                               dict_labels['real_labels'], dict_labels['pred_probabilities'],
+                               ['no collision', 'collision'], attack_mode, title_name=eval_path, saved_path=result, ishow=True)
             index = index + 1
 
     # all_criterion

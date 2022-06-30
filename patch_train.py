@@ -34,6 +34,7 @@ class PatchTrainer(object):
         # Load patch Projection
         self.patch_applier = PatchApplier().cuda()
         self.patch_transformer = PatchTransformer().cuda()
+        self.patch_transformer = PatchTransformer().cuda()
 
         # Load Methods to calcu Loss: AttackLoss, NPS Loss, TV Loss
         self.attack_loss = Attack_Loss().cuda()
@@ -76,7 +77,7 @@ class PatchTrainer(object):
         # print(f'One epoch is {len(training_dataloader)}')
 
         root_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch"
-        saved_patch_name = "test10_k64_balance1_nobeta_nps001_t25_scale01-17"
+        saved_patch_name = "test11_k64_balance1_nobeta_nps001_t25_scale01-17"
         patch_path = os.path.join(root_path, saved_patch_name, "patchs")
         if not os.path.exists(patch_path):
             os.makedirs(patch_path)

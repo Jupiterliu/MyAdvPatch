@@ -211,6 +211,9 @@ def mul_columns_sort(data):
     inFile = np.array(totuple(tuple1))
     return inFile
 
+def mean_ablosute_error(pred, true):
+    return np.sum(np.abs(pred - true))/len(pred)
+
 def plot_loss(experiment_rootdir, fname):
     # Read log file
     try:
@@ -232,102 +235,36 @@ def plot_loss(experiment_rootdir, fname):
     plt.show()
 
 
-def make_and_save_histograms(pred_steerings, real_steerings, img_name="histograms.png", title_name = None):
-    """
-    Plot and save histograms from predicted steerings and real steerings.
-
-    # Arguments
-        pred_steerings: List of predicted steerings.
-        real_steerings: List of real steerings.
-        img_name: Name of the png file to save the figure.
-    """
+def evaluation_metrics(pred_steerings, real_steerings, real_labels, pred_prob, classes,
+                       attack_mode, normalize=True, title_name = None, saved_path = None, ishow = True):
+    ### for the steering angle
     pred_steerings = np.array(pred_steerings)
     real_steerings = np.array(real_steerings)
     max_h = np.maximum(np.max(pred_steerings), np.max(real_steerings))
     min_h = np.minimum(np.min(pred_steerings), np.min(real_steerings))
     bins = np.linspace(min_h, max_h, num=50)
-    plt.figure()
-    plt.title(title_name)
+    font_blue = {'color': 'blue',
+            'size': 16,
+            'family': 'Times New Roman',
+            # 'style':'italic',  # 斜体
+            }
+    font_red = {'color': 'red',
+                 'size': 16,
+                 'family': 'Times New Roman',
+                 # 'style':'italic',  # 斜体
+                 }
+    plt.figure(1, figsize=(7, 7))
+    plt.subplot(2, 1, 1)
+    plt.title("Steering Angle")
+    # plt.text(-0.75, -160, "ASDR:"+str(ASDR), fontdict = font)
     plt.hist(pred_steerings, bins=bins, alpha=0.5, label='Predicted', color='b')
     plt.hist(real_steerings, bins=bins, alpha=0.5, label='Real', color='r')
     # plt.title('Steering angle')
     plt.legend(fontsize=10)
-    plt.savefig(img_name, bbox_inches='tight')
-
-def make_and_save_attack_histograms(pred_steerings, real_steerings, img_name="histograms.png", title_name = None):
-    """
-    Plot and save histograms from predicted steerings and real steerings.
-
-    # Arguments
-        pred_steerings: List of predicted steerings.
-        real_steerings: List of real steerings.
-        img_name: Name of the png file to save the figure.
-    """
-    pred_steerings = np.array(pred_steerings)
-    real_steerings = np.array(real_steerings)
-    max_h = np.maximum(np.max(pred_steerings), np.max(real_steerings))
-    min_h = np.minimum(np.min(pred_steerings), np.min(real_steerings))
-    bins = np.linspace(min_h, max_h, num=50)
-    plt.figure()
-    plt.title(title_name)
-    plt.hist(pred_steerings, bins=bins, alpha=0.5, label='Predicted', color='b')
-    plt.hist(real_steerings, bins=bins, alpha=0.5, label='Real', color='r')
-    # plt.title('Steering angle')
-    plt.legend(fontsize=10)
-    plt.savefig(img_name, bbox_inches='tight')
-
-def plot_confusion_matrix(real_labels, pred_prob, classes, normalize=False, img_name="confusion.png", title_name = None, ishow = True):
-    """
-    Plot and save confusion matrix computed from predicted and real labels.
-
-        # Arguments
-        real_labels: List of real labels.
-        pred_prob: List of predicted probabilities.
-        normalize: Boolean, whether to apply normalization.
-        img_name: Name of the png file to save the figure.
-    """
-    real_labels = np.array(real_labels)
-
-    # Binarize predicted probabilities
-    pred_prob = np.array(pred_prob)
-    pred_labels = np.zeros_like(pred_prob)
-    pred_labels[pred_prob >= 0.5] = 1
-
-    cm = confusion_matrix(real_labels, pred_labels)
-    plt.figure()
-    plt.title(title_name)
-    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
-    # plt.title("Confusion matrix")
-    plt.colorbar()
-    tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks, classes)
-    plt.yticks(tick_marks, classes, rotation=90)
-
-    if normalize:
-        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-
-    thresh = cm.max() / 2.
-    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(j, i, cm[i, j], horizontalalignment="center", color="white" if cm[i, j] > thresh else "black")
-
-    plt.tight_layout()
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
-    plt.savefig(img_name)
-    if ishow:
-        plt.show()
+    plt.savefig(os.path.join(saved_path, "histograms.png"), bbox_inches='tight')
 
 
-def plot_attack_confusion_matrix(real_labels, pred_prob, classes, attack_mode, normalize=True, img_name="confusion.png", title_name = None, ishow = True):
-    """
-    Plot and save confusion matrix computed from predicted and real labels.
-
-        # Arguments
-        real_labels: List of real labels.
-        pred_prob: List of predicted probabilities.
-        normalize: Boolean, whether to apply normalization.
-        img_name: Name of the png file to save the figure.
-    """
+    ### for the collision probability
     real_labels = np.array(real_labels)
 
     # Binarize predicted probabilities
@@ -345,25 +282,43 @@ def plot_attack_confusion_matrix(real_labels, pred_prob, classes, attack_mode, n
     # else:
     #     asr = cm[0, 1] / (cm[0, 1] + cm[0, 0])
     #     title_name = title_name + ", ASR-" + str(asr)
-    plt.figure()
-    plt.title(attack_mode + ":" + title_name)
+    plt.figure(1)
+    plt.subplot(2, 2, 3)
+    plt.title("Collision Prob.")
     plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
     # plt.title("Confusion matrix")
-    plt.colorbar()
+    # plt.colorbar()
     tick_marks = np.arange(len(classes))
     plt.xticks(tick_marks, classes)
     plt.yticks(tick_marks, classes, rotation=90)
-
     if normalize:
-        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        cm = np.around(cm.astype('float') / cm.sum(axis=1)[:, np.newaxis], 5)
 
     thresh = cm.max() / 2.
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
         plt.text(j, i, cm[i, j], horizontalalignment="center", color="white" if cm[i, j] > thresh else "black")
 
-    plt.tight_layout()
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
-    plt.savefig(img_name)
+    plt.ylabel('Clean label')
+    plt.xlabel('Patched label')
+    plt.savefig(os.path.join(saved_path, "confusion.png"))
+
+    ### For the metrics: ASDR, EVA, RMSE, mASR, mF1-score
+    plt.figure(1)
+    plt.subplot(2, 2, 4)
+    plt.axis("off")
+    plt.title("Metrics")
+    ASD = np.mean(np.abs((pred_steerings - real_steerings)))
+    MAE = mean_ablosute_error(pred_steerings, np.zeros(len(pred_steerings)))
+    RMSE = compute_rmse(pred_steerings, np.zeros(len(pred_steerings)))
+    mASR = cm[1, 0] / (cm[1, 0] + cm[1, 1])
+    mF1 = cm[1, 0] / (cm[1, 0] + (cm[0, 1] + cm[1, 1])/2)
+    plt.text(0.05, 0.8,  "ASD: " + str( np.around(ASD, 5)*90 ) + "°", fontdict=font_blue)
+    plt.text(0.05, 0.65, "MAE: " + str(np.around(MAE, 5)), fontdict=font_blue)
+    plt.text(0.05, 0.5,  "RMSE:" + str(np.around(RMSE, 5)), fontdict=font_blue)
+    plt.text(0.05, 0.35, "mASR:" + str(np.around(mASR, 5)*100) + "%", fontdict=font_red)
+    plt.text(0.05, 0.2,  "mF1: " + str(np.around(mF1, 5)*100) + "%", fontdict=font_red)
     if ishow:
+        # plt.tight_layout()
+        plt.suptitle("Evaluation Metrics:" + attack_mode + ":" + title_name)
+        plt.savefig(os.path.join(saved_path, "EvaluationMetrics"))
         plt.show()
