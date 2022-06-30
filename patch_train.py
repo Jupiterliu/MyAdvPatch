@@ -34,7 +34,6 @@ class PatchTrainer(object):
         # Load patch Projection
         self.patch_applier = PatchApplier().cuda()
         self.patch_transformer = PatchTransformer().cuda()
-        self.patch_transformer = PatchTransformer().cuda()
 
         # Load Methods to calcu Loss: AttackLoss, NPS Loss, TV Loss
         self.attack_loss = Attack_Loss().cuda()
