@@ -154,8 +154,8 @@ class PatchTransformer(nn.Module):
         self.min_scale = 0.1  # Scale the patch size from (patch_size * min_scale) to (patch_size * max_scale)
         self.max_scale = 1.7
         self.noise_factor = 0.1
-        self.minangle = -10 / 180 * math.pi
-        self.maxangle = 10 / 180 * math.pi
+        self.minangle = -10 #/ 180 * math.pi
+        self.maxangle = 10 #/ 180 * math.pi
         self.medianpooler = MedianPool2d(7, same=True)
 
     def forward(self, adv_patch, steer_true, img_size, do_rotate=True, rand_loc=True):
@@ -165,28 +165,28 @@ class PatchTransformer(nn.Module):
         # Determine size of padding
         pad = (img_size - adv_patch.size(-1)) / 2
         # Make a batch of patches
-        adv_patch = adv_patch.unsqueeze(0)  # .unsqueeze(0)
-        adv_batch = adv_patch.expand(steer_true.size(0), 1, -1, -1, -1)
+        # adv_patch = adv_patch.unsqueeze(0)  # .unsqueeze(0)
+        adv_batch = adv_patch.expand(steer_true.size(0), -1, -1, -1)
         batch_size = torch.Size((steer_true.size(0), 1))
-        anglesize = steer_true.size(0)
+        batchsize = steer_true.size(0)
 
         # Contrast, brightness and noise transforms
 
         # Create random contrast tensor
         contrast = torch.cuda.FloatTensor(batch_size).uniform_(self.min_contrast, self.max_contrast)
-        contrast = contrast.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1)
-        contrast = contrast.expand(-1, -1, adv_batch.size(-3), adv_batch.size(-2), adv_batch.size(-1))
+        contrast = contrast.unsqueeze(-1).unsqueeze(-1) #.unsqueeze(-1)
+        contrast = contrast.expand(-1, adv_batch.size(-3), adv_batch.size(-2), adv_batch.size(-1))
         contrast = contrast.cuda()
 
         # Create random brightness tensor
         brightness = torch.cuda.FloatTensor(batch_size).uniform_(self.min_brightness, self.max_brightness)
-        brightness = brightness.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1)
-        brightness = brightness.expand(-1, -1, adv_batch.size(-3), adv_batch.size(-2), adv_batch.size(-1))
+        brightness = brightness.unsqueeze(-1).unsqueeze(-1)  #.unsqueeze(-1)
+        brightness = brightness.expand(-1, adv_batch.size(-3), adv_batch.size(-2), adv_batch.size(-1))
         brightness = brightness.cuda()
 
         # Create random scale tensor
         scale = torch.cuda.FloatTensor(batch_size).uniform_(self.min_scale, self.max_scale)  # .fill_(0.85)
-        scale = scale.view(anglesize)
+        scale = scale.view(batchsize)
         scale = scale.cuda()
 
         # Create random noise tensor
@@ -197,68 +197,38 @@ class PatchTransformer(nn.Module):
 
         adv_batch = torch.clamp(adv_batch, 0.000001, 0.99999)  # compress to min-max, not standardize
 
-        # Where the label class_id is 1 we don't want a patch (padding) --> fill mask with zero's
-        # cls_ids = torch.narrow(lab_batch, 2, 0, 1)
-        cls_ids = (torch.cuda.FloatTensor(batch_size).unsqueeze(-1)).fill_(0)
-        cls_mask = cls_ids.expand(-1, -1, 3)
-        cls_mask = cls_mask.unsqueeze(-1)
-        cls_mask = cls_mask.expand(-1, -1, -1, adv_batch.size(3))
-        cls_mask = cls_mask.unsqueeze(-1)
-        cls_mask = cls_mask.expand(-1, -1, -1, -1, adv_batch.size(4))
-        msk_batch = torch.cuda.FloatTensor(cls_mask.size()).fill_(1) - cls_mask
-
-        # Pad patch and mask to image dimensions
-        mypad = nn.ConstantPad2d((int(pad + 0.5), int(pad), int(pad + 0.5), int(pad)), 0)
-        adv_batch = mypad(adv_batch)
-        msk_batch = mypad(msk_batch)
-
         # Rotation and rescaling transforms
         if do_rotate:
-            angle = torch.cuda.FloatTensor(anglesize).uniform_(self.minangle, self.maxangle)
+            angle = torch.cuda.FloatTensor(batchsize).uniform_(self.minangle, self.maxangle)
         else:
-            angle = torch.cuda.FloatTensor(anglesize).fill_(0)
+            angle = torch.cuda.FloatTensor(batchsize).fill_(0)
 
         # Resizes and rotates
-        target_x = torch.cuda.FloatTensor([0.5])
-        target_y = torch.cuda.FloatTensor([0.5])
-        targetoff_x = torch.cuda.FloatTensor([0.05])
-        targetoff_y = torch.cuda.FloatTensor([0.05])
-        if (rand_loc):
-            off_x = targetoff_x * (torch.cuda.FloatTensor(anglesize).uniform_(-4, 4))
-            target_x = target_x + off_x
-            off_y = targetoff_y * (torch.cuda.FloatTensor(anglesize).uniform_(-4, 4))
-            target_y = target_y + off_y
+        patches = torch.empty((batchsize, 3, img_size, img_size)).cuda()
+        width = img_size
+        for i in range(batchsize):
+            patch = adv_batch[i,:,:,:]
+            patch_img = transforms.ToPILImage('RGB')(patch)
+            patch_scaled = patch_img.resize((patch.size(-2)*scale[i], patch.size(-1)*scale[i]))
+            patch_rotated = patch_scaled.rotate(angle[i], expand=1)
+            iw, ih = patch_rotated.size
+            pad_top = torch.cuda.FloatTensor(1).uniform_(0, width - iw)
+            pad_bottom = width - pad_top - iw
+            pad_left = torch.cuda.FloatTensor(1).uniform_(0, width - ih)
+            pad_right = width - pad_left - ih
+            bg = Image.new("RGB", (width, width), (0,0,0))
+            bg.paste(patch_rotated, (pad_top, pad_left))
+            bg_tensor = transforms.ToTensor()(bg).cuda()
+            patches[i,:,:,:] = bg_tensor
 
-        s = adv_batch.size()
-        adv_batch = adv_batch.view(s[0] * s[1], s[2], s[3], s[4])
-        msk_batch = msk_batch.view(s[0] * s[1], s[2], s[3], s[4])
+        adv_batch_t = torch.clamp(patches, 0, 0.999999)
 
-        tx = (-target_x + 0.5) * 2
-        ty = (-target_y + 0.5) * 2
-        sin = torch.sin(angle)
-        cos = torch.cos(angle)
+        return adv_batch_t
 
-        # Theta = rotation,rescale matrix
-        theta = torch.cuda.FloatTensor(anglesize, 2, 3).fill_(0)
-        theta[:, 0, 0] = cos / scale
-        theta[:, 0, 1] = sin / scale
-        theta[:, 0, 2] = tx * cos / scale + ty * sin / scale
-        theta[:, 1, 0] = -sin / scale
-        theta[:, 1, 1] = cos / scale
-        theta[:, 1, 2] = -tx * sin / scale + ty * cos / scale
-
-        b_sh = adv_batch.shape
-        grid = F.affine_grid(theta, adv_batch.shape)
-
-        adv_batch_t = F.grid_sample(adv_batch, grid)
-        msk_batch_t = F.grid_sample(msk_batch, grid)
-
-        adv_batch_t = adv_batch_t.view(s[0], s[1], s[2], s[3], s[4])
-        msk_batch_t = msk_batch_t.view(s[0], s[1], s[2], s[3], s[4])
-
-        adv_batch_t = torch.clamp(adv_batch_t, 0.000001, 0.999999)
-
-        return adv_batch_t * msk_batch_t
+    def random_pad(self, iw, ih, w, h):
+        sum = h + w - iw - ih
+        pad
+        a = random.sample(range(0, sum), k = 1)
 
 class PatchApplier(nn.Module):
     """PatchApplier: applies adversarial patches to images.
@@ -270,7 +240,7 @@ class PatchApplier(nn.Module):
     def __init__(self):
         super(PatchApplier, self).__init__()
     def forward(self, img_batch, adv_batch):
-        advs = torch.unbind(adv_batch, 1)
+        advs = torch.unbind(adv_batch.unsqueeze(1), 1)
         for adv in advs:
             img_batch = torch.where((adv == 0), img_batch, adv)
         return img_batch
