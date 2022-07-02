@@ -5,6 +5,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import transforms
 
+import matplotlib.pyplot as plt
+from matplotlib.pyplot import *
 from utils.median_pool import MedianPool2d
 
 import random
@@ -30,8 +32,8 @@ import numpy as np
 #         self.min_scale = 0.1  # Scale the patch size from (patch_size * min_scale) to (patch_size * max_scale)
 #         self.max_scale = 1.7
 #         self.noise_factor = 0.1
-#         self.minangle = -10 / 180 * math.pi
-#         self.maxangle = 10 / 180 * math.pi
+#         self.minangle = 0#-10 / 180 * math.pi
+#         self.maxangle = 0#10 / 180 * math.pi
 #         self.medianpooler = MedianPool2d(7, same=True)
 #
 #     def forward(self, adv_patch, steer_true, img_size, do_rotate=True, rand_loc=True):
@@ -136,6 +138,7 @@ import numpy as np
 #
 #         return adv_batch_t * msk_batch_t
 
+
 class PatchTransformer(nn.Module):
     """PatchTransformer: transforms batch of patches
 
@@ -147,47 +150,38 @@ class PatchTransformer(nn.Module):
 
     def __init__(self):
         super(PatchTransformer, self).__init__()
-        self.min_contrast = 0.7  # 0.8
-        self.max_contrast = 1.3  # 1.2
-        self.min_brightness = -0.2  # -0.1
-        self.max_brightness = 0.2  # 0.1
-        self.min_scale = 0.1  # Scale the patch size from (patch_size * min_scale) to (patch_size * max_scale)
-        self.max_scale = 1.7
+        self.min_contrast = 0.8  # 0.8
+        self.max_contrast = 1.2  # 1.2
+        self.min_brightness = -0.1  # -0.1
+        self.max_brightness = 0.1  # 0.1
+        self.min_scale = 1.77  # Scale the patch size from (patch_size * min_scale) to (patch_size * max_scale)
+        self.max_scale = 1.77
         self.noise_factor = 0.1
-        self.minangle = -10 #/ 180 * math.pi
-        self.maxangle = 10 #/ 180 * math.pi
+        self.minangle = -8  #-10 / 180 * math.pi
+        self.maxangle = 8  #10 / 180 * math.pi
+        self.mindistortion = 0.
+        self.maxdistortion = 0.2
         self.medianpooler = MedianPool2d(7, same=True)
 
-    def forward(self, adv_patch, steer_true, img_size, do_rotate=True, rand_loc=True):
+    def forward(self, adv_patch, steer_true, img_size, do_rotate=True, do_pespective=True, location="random"):
         # adv_patch = F.conv2d(adv_patch.unsqueeze(0),self.kernel,padding=(2,2))
         adv_patch = transforms.Resize((100, 100))(adv_patch)
         adv_patch = self.medianpooler(adv_patch.unsqueeze(0))
-        # Determine size of padding
-        pad = (img_size - adv_patch.size(-1)) / 2
-        # Make a batch of patches
-        # adv_patch = adv_patch.unsqueeze(0)  # .unsqueeze(0)
         adv_batch = adv_patch.expand(steer_true.size(0), -1, -1, -1)
         batch_size = torch.Size((steer_true.size(0), 1))
-        batchsize = steer_true.size(0)
 
         # Contrast, brightness and noise transforms
-
         # Create random contrast tensor
         contrast = torch.cuda.FloatTensor(batch_size).uniform_(self.min_contrast, self.max_contrast)
-        contrast = contrast.unsqueeze(-1).unsqueeze(-1) #.unsqueeze(-1)
+        contrast = contrast.unsqueeze(-1).unsqueeze(-1)
         contrast = contrast.expand(-1, adv_batch.size(-3), adv_batch.size(-2), adv_batch.size(-1))
         contrast = contrast.cuda()
 
         # Create random brightness tensor
         brightness = torch.cuda.FloatTensor(batch_size).uniform_(self.min_brightness, self.max_brightness)
-        brightness = brightness.unsqueeze(-1).unsqueeze(-1)  #.unsqueeze(-1)
+        brightness = brightness.unsqueeze(-1).unsqueeze(-1)
         brightness = brightness.expand(-1, adv_batch.size(-3), adv_batch.size(-2), adv_batch.size(-1))
         brightness = brightness.cuda()
-
-        # Create random scale tensor
-        scale = torch.cuda.FloatTensor(batch_size).uniform_(self.min_scale, self.max_scale)  # .fill_(0.85)
-        scale = scale.view(batchsize)
-        scale = scale.cuda()
 
         # Create random noise tensor
         noise = torch.cuda.FloatTensor(adv_batch.size()).uniform_(-1, 1) * self.noise_factor
@@ -197,38 +191,74 @@ class PatchTransformer(nn.Module):
 
         adv_batch = torch.clamp(adv_batch, 0.000001, 0.99999)  # compress to min-max, not standardize
 
-        # Rotation and rescaling transforms
-        if do_rotate:
-            angle = torch.cuda.FloatTensor(batchsize).uniform_(self.minangle, self.maxangle)
-        else:
-            angle = torch.cuda.FloatTensor(batchsize).fill_(0)
+        for i in range(adv_batch.size(0)):
+            if do_rotate:
+                angle = torch.cuda.FloatTensor(1).uniform_(self.minangle, self.maxangle)
+            else:
+                angle = torch.cuda.FloatTensor(1).fill_(0)
+            if do_pespective:
+                distortion = torch.cuda.FloatTensor(1).uniform_(0., 0.2)
+                p = torch.cuda.FloatTensor(1).uniform_(0, 1)
+            else:
+                distortion = torch.cuda.FloatTensor(1).fill_(0)
+                p = torch.cuda.FloatTensor(1).fill_(0)
+            scale = torch.cuda.FloatTensor(1).uniform_(self.min_scale, self.max_scale)
 
-        # Resizes and rotates
-        patches = torch.empty((batchsize, 3, img_size, img_size)).cuda()
-        width = img_size
-        for i in range(batchsize):
-            patch = adv_batch[i,:,:,:]
-            patch_img = transforms.ToPILImage('RGB')(patch)
-            patch_scaled = patch_img.resize((patch.size(-2)*scale[i], patch.size(-1)*scale[i]))
-            patch_rotated = patch_scaled.rotate(angle[i], expand=1)
-            iw, ih = patch_rotated.size
-            pad_top = torch.cuda.FloatTensor(1).uniform_(0, width - iw)
-            pad_bottom = width - pad_top - iw
-            pad_left = torch.cuda.FloatTensor(1).uniform_(0, width - ih)
-            pad_right = width - pad_left - ih
-            bg = Image.new("RGB", (width, width), (0,0,0))
-            bg.paste(patch_rotated, (pad_top, pad_left))
-            bg_tensor = transforms.ToTensor()(bg).cuda()
-            patches[i,:,:,:] = bg_tensor
+            # Scale
+            adv_b_scaled = transforms.Resize((int(adv_batch.size(-1) * scale), int(adv_batch.size(-1) * scale)))(
+                adv_batch[i, :, :, :])
+            img0 = transforms.ToPILImage('RGB')(adv_b_scaled)
+            subplot(3, 3, 1)
+            plt.imshow(img0)
+            plt.show()
 
-        adv_batch_t = torch.clamp(patches, 0, 0.999999)
+            # Perspective
+            perspectives = transforms.RandomPerspective(distortion_scale=distortion, p=p.cpu(), fill=0)
+            adv_b_perspective = perspectives(adv_b_scaled)
+            img1 = transforms.ToPILImage('RGB')(adv_b_perspective)
+            subplot(3, 3, 2)
+            plt.imshow(img1)
+            plt.show()
+
+            # Rotation
+            rotations = transforms.RandomRotation((angle, angle), expand=True, fill=0)
+            adv_b_rotation = rotations(adv_b_perspective)
+            img2 = transforms.ToPILImage('RGB')(adv_b_rotation)
+            subplot(3, 3, 3)
+            plt.imshow(img2)
+            plt.show()
+
+            # Location: random, centre, corner
+            length = adv_b_rotation.size(-1)
+            if location == "random":
+                pad_left = torch.cuda.FloatTensor(1).uniform_(0, img_size - length).int()
+                pad_right = img_size - length - pad_left
+                pad_top = torch.cuda.FloatTensor(1).uniform_(0, img_size - length).int()
+                pad_bottom = img_size - length - pad_top
+            elif location == "centre":
+                pad_left = torch.cuda.FloatTensor(1).fill_((img_size - length)/2).int()
+                pad_right = img_size - length - pad_left
+                pad_top = torch.cuda.FloatTensor(1).fill_((img_size - length)/2).int()
+                pad_bottom = img_size - length - pad_top
+            elif location == "corner":
+                pad_left = torch.cuda.FloatTensor(1).fill_(0).int()
+                pad_right = img_size - length - pad_left
+                pad_top = torch.cuda.FloatTensor(1).fill_(0).int()
+                pad_bottom = img_size - length - pad_top
+            mypad1 = nn.ConstantPad2d((pad_left, pad_right, pad_top, pad_bottom), 0)
+            adv_b_pad = mypad1(adv_b_rotation)
+            img3 = transforms.ToPILImage('RGB')(adv_b_pad)
+            subplot(3, 3, 4)
+            plt.imshow(img3)
+            plt.show()
+            if i == 0:
+                adv_batch_t = adv_b_pad.unsqueeze(0)
+            else:
+                adv_batch_t = torch.cat((adv_batch_t, adv_b_pad.unsqueeze(0)), 0)
+        # adv_batch_t = torch.clamp(adv_batch_t, 0.000001, 0.999999)
 
         return adv_batch_t
 
-    def random_pad(self, iw, ih, w, h):
-        sum = h + w - iw - ih
-        pad
-        a = random.sample(range(0, sum), k = 1)
 
 class PatchApplier(nn.Module):
     """PatchApplier: applies adversarial patches to images.

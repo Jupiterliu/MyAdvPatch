@@ -22,13 +22,13 @@ if __name__ == '__main__':
     testing_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'testing', image_mode ,augmentation=False)
     testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=64, shuffle=True, num_workers=10)
 
-    test_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test9_k16_balance1_nobeta_nps001_t25_scale01-17"
-    eval_path = "patch57_02-17-centre"
+    test_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test12_k64_balance1_nobeta_nps001_t25_scale02-17"
+    eval_path = "patch24_01-17-random"
     results = os.path.join(test_path, eval_path)
     if not os.path.exists(results):
         os.makedirs(results)
 
-    patchfile = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test9_k16_balance1_nobeta_nps001_t25_scale01-17/patchs/20220617-105336_steer0.0_coll0.0_ep57.png"
+    patchfile = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test12_k64_balance1_nobeta_nps001_t25_scale02-17/patchs/20220702-010141_steer0.5_coll0.0_ep24.png"
     adv_patch = Image.open(patchfile).convert('RGB')
     adv_patch = transforms.ToTensor()(adv_patch).cuda()
 

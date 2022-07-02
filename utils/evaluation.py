@@ -59,7 +59,7 @@ def testModel(model, testing_dataloader, test_path, eval_path, is_patch_test, ad
         # patch testing
         if is_patch_test:
             # patch projection
-            adv_batch_t = patch_transformer(adv_patch, steer_true, 200, do_rotate=True, rand_loc=False)
+            adv_batch_t = patch_transformer(adv_patch, steer_true, 200)
             p_img_batch = patch_applier(img_cuda, adv_batch_t)
             img_cuda = F.interpolate(p_img_batch, (200, 200))  # Up or Down sample
 
