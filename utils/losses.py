@@ -28,7 +28,7 @@ class Attack_Loss(nn.Module):
     def targeted_attack_loss(self, k, steer_true, steer_pred, coll_true, coll_pred, steer_target, coll_target,
                              use_old_loss, beta):
         # Steer angle: steer_target = torch.cuda.FloatTensor(torch.Size((steer_true.size(0), 1))).fill_(steer_target)
-        balance_steer = 1
+        balance_steer = 10
         balance_coll = 1
         target_steer = steer_true.clone()
         target_steer[:, 1] = steer_target

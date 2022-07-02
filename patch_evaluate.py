@@ -22,20 +22,20 @@ if __name__ == '__main__':
     testing_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'testing', image_mode ,augmentation=False)
     testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=64, shuffle=True, num_workers=10)
 
-    test_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test12_k64_balance1_nobeta_nps001_t25_scale02-17"
-    eval_path = "patch24_01-17-random"
+    test_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test13_nopes_k64_balance1_nobeta_nps001_t25_scale02-17"
+    eval_path = "patch33_10-177-random"
     results = os.path.join(test_path, eval_path)
     if not os.path.exists(results):
         os.makedirs(results)
 
-    patchfile = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test12_k64_balance1_nobeta_nps001_t25_scale02-17/patchs/20220702-010141_steer0.5_coll0.0_ep24.png"
+    patchfile = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test13_nopes_k64_balance1_nobeta_nps001_t25_scale02-17/patchs/20220702-010823_steer0.0_coll0.0_ep33.png"
     adv_patch = Image.open(patchfile).convert('RGB')
     adv_patch = transforms.ToTensor()(adv_patch).cuda()
 
     is_patch_test = True
 
     with torch.no_grad():
-        testModel(dronet, testing_dataloader, test_path, eval_path, is_patch_test, adv_patch)
+        testModel(dronet, testing_dataloader, test_path, eval_path, is_patch_test, adv_patch, do_rotate=True, do_pespective=False, location="random")
 
         # Compute histograms from predicted and real steerings; confusion matrix from predicted and real labels
         fname_steer = os.path.join(test_path, eval_path, 'predicted_and_real_steerings.json')

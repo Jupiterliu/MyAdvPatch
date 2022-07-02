@@ -154,13 +154,13 @@ class PatchTransformer(nn.Module):
         self.max_contrast = 1.2  # 1.2
         self.min_brightness = -0.1  # -0.1
         self.max_brightness = 0.1  # 0.1
-        self.min_scale = 1.77  # Scale the patch size from (patch_size * min_scale) to (patch_size * max_scale)
-        self.max_scale = 1.77
+        self.min_scale = 0.4  # Scale the patch size from (patch_size * min_scale) to (patch_size * max_scale)
+        self.max_scale = 1.4
         self.noise_factor = 0.1
-        self.minangle = -8  #-10 / 180 * math.pi
-        self.maxangle = 8  #10 / 180 * math.pi
-        self.mindistortion = 0.
-        self.maxdistortion = 0.2
+        self.min_angle = -8  #-10 / 180 * math.pi
+        self.max_angle = 8  #10 / 180 * math.pi
+        self.min_distortion = 0.
+        self.max_distortion = 0.2
         self.medianpooler = MedianPool2d(7, same=True)
 
     def forward(self, adv_patch, steer_true, img_size, do_rotate=True, do_pespective=True, location="random"):
@@ -193,11 +193,11 @@ class PatchTransformer(nn.Module):
 
         for i in range(adv_batch.size(0)):
             if do_rotate:
-                angle = torch.cuda.FloatTensor(1).uniform_(self.minangle, self.maxangle)
+                angle = torch.cuda.FloatTensor(1).uniform_(self.min_angle, self.max_angle)
             else:
                 angle = torch.cuda.FloatTensor(1).fill_(0)
             if do_pespective:
-                distortion = torch.cuda.FloatTensor(1).uniform_(0., 0.2)
+                distortion = torch.cuda.FloatTensor(1).uniform_(self.min_distortion, self.max_distortion)
                 p = torch.cuda.FloatTensor(1).uniform_(0, 1)
             else:
                 distortion = torch.cuda.FloatTensor(1).fill_(0)
@@ -207,26 +207,26 @@ class PatchTransformer(nn.Module):
             # Scale
             adv_b_scaled = transforms.Resize((int(adv_batch.size(-1) * scale), int(adv_batch.size(-1) * scale)))(
                 adv_batch[i, :, :, :])
-            img0 = transforms.ToPILImage('RGB')(adv_b_scaled)
-            subplot(3, 3, 1)
-            plt.imshow(img0)
-            plt.show()
+            # img0 = transforms.ToPILImage('RGB')(adv_b_scaled)
+            # subplot(3, 3, 1)
+            # plt.imshow(img0)
+            # plt.show()
 
             # Perspective
             perspectives = transforms.RandomPerspective(distortion_scale=distortion, p=p.cpu(), fill=0)
             adv_b_perspective = perspectives(adv_b_scaled)
-            img1 = transforms.ToPILImage('RGB')(adv_b_perspective)
-            subplot(3, 3, 2)
-            plt.imshow(img1)
-            plt.show()
+            # img1 = transforms.ToPILImage('RGB')(adv_b_perspective)
+            # subplot(3, 3, 2)
+            # plt.imshow(img1)
+            # plt.show()
 
             # Rotation
             rotations = transforms.RandomRotation((angle, angle), expand=True, fill=0)
             adv_b_rotation = rotations(adv_b_perspective)
-            img2 = transforms.ToPILImage('RGB')(adv_b_rotation)
-            subplot(3, 3, 3)
-            plt.imshow(img2)
-            plt.show()
+            # img2 = transforms.ToPILImage('RGB')(adv_b_rotation)
+            # subplot(3, 3, 3)
+            # plt.imshow(img2)
+            # plt.show()
 
             # Location: random, centre, corner
             length = adv_b_rotation.size(-1)
@@ -247,10 +247,10 @@ class PatchTransformer(nn.Module):
                 pad_bottom = img_size - length - pad_top
             mypad1 = nn.ConstantPad2d((pad_left, pad_right, pad_top, pad_bottom), 0)
             adv_b_pad = mypad1(adv_b_rotation)
-            img3 = transforms.ToPILImage('RGB')(adv_b_pad)
-            subplot(3, 3, 4)
-            plt.imshow(img3)
-            plt.show()
+            # img3 = transforms.ToPILImage('RGB')(adv_b_pad)
+            # subplot(3, 3, 4)
+            # plt.imshow(img3)
+            # plt.show()
             if i == 0:
                 adv_batch_t = adv_b_pad.unsqueeze(0)
             else:
