@@ -76,7 +76,7 @@ class PatchTrainer(object):
         # print(f'One epoch is {len(training_dataloader)}')
 
         root_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch"
-        saved_patch_name = "test16_nopes_lr01_k128_balance10-1_beta10_gamma1_nps001_tv25_scale04-14"
+        saved_patch_name = "test17_nopes_lr01_k128_balance100-100_beta10_gamma1_nps001_tv25_scale10-17"
         patch_path = os.path.join(root_path, saved_patch_name, "patchs")
         if not os.path.exists(patch_path):
             os.makedirs(patch_path)
@@ -109,7 +109,7 @@ class PatchTrainer(object):
                     if self.config.image_mode == "gray":
                         adv_patch = transforms.Grayscale()(adv_patch)
                     adv_batch_t = self.patch_transformer(adv_patch, steer_true, self.config.image_size,
-                                                         do_rotate=True, do_pespective=False, location="random")
+                                                         do_rotate=True, do_pespective=False, do_nested=True, location="random")
                     p_img_batch = self.patch_applier(img_batch, adv_batch_t)
                     p_img_batch = F.interpolate(p_img_batch, (200, 200))  # Up or Down sample
 

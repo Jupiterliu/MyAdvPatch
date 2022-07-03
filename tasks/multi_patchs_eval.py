@@ -22,9 +22,9 @@ if __name__ == '__main__':
 
     is_patch_test = True
 
-    patchs_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test10_k64_balance1_nobeta_nps001_t25_scale01-17"
+    patchs_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test16_nopes_lr01_k128_balance10-1_beta10_gamma1_nps001_tv25_scale04-14"
     print("Loaded patches path: ", patchs_path)
-    eval_path = "scale_01-17-centre"
+    eval_path = "scale_02-17-random"
     folder = os.path.join(patchs_path, "multi_patchs_eval_result")
     if not os.path.exists(folder):
         os.makedirs(folder)
@@ -45,8 +45,8 @@ if __name__ == '__main__':
         if not os.path.exists(result):
             os.makedirs(result)
         with torch.no_grad():
-            eva, rmse, ave_accuracy, precision, recall, f_score = testModel(dronet, testing_dataloader,
-                                                                            folder, patch, is_patch_test, adv_patch)
+            eva, rmse, ave_accuracy, precision, recall, f_score = testModel(dronet, testing_dataloader,folder, patch, is_patch_test, adv_patch,
+                                                                            do_rotate=True, do_pespective=False, do_nested=True, location="random")
             all_criterion[index, 0] = index
             all_criterion[index, 1] = eva
             all_criterion[index, 2] = rmse
