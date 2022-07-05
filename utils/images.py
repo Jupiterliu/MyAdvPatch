@@ -154,8 +154,8 @@ class PatchTransformer(nn.Module):
         self.max_contrast = 1.2  # 1.2
         self.min_brightness = -0.1  # -0.1
         self.max_brightness = 0.1  # 0.1
-        self.min_scale = 1.8  # Scale the patch size from (patch_size * min_scale) to (patch_size * max_scale)
-        self.max_scale = 2
+        self.min_scale = 1 # Scale the patch size from (patch_size * min_scale) to (patch_size * max_scale)
+        self.max_scale = 3.6
         self.noise_factor = 0.1
         self.min_angle = -8  #-10 / 180 * math.pi
         self.max_angle = 8  #10 / 180 * math.pi
@@ -163,7 +163,7 @@ class PatchTransformer(nn.Module):
         self.max_distortion = 0.2
         self.medianpooler = MedianPool2d(7, same=True)
 
-    def forward(self, adv_patch, steer_true, img_size, do_rotate=True, do_pespective=True, do_nested=True, location="random"):
+    def forward(self, adv_patch, steer_true, img_size, do_rotate=True, do_pespective=True, do_nested=True, location="random", min_scale=1, max_scale=3.6):
         # adv_patch = F.conv2d(adv_patch.unsqueeze(0),self.kernel,padding=(2,2))
         adv_patch = transforms.Resize((100, 100))(adv_patch)
         adv_patch = self.medianpooler(adv_patch.unsqueeze(0))
@@ -203,14 +203,18 @@ class PatchTransformer(nn.Module):
             else:
                 distortion = torch.cuda.FloatTensor(1).fill_(0)
                 p = torch.cuda.FloatTensor(1).fill_(0)
-            scale = torch.cuda.FloatTensor(1).uniform_(self.min_scale, self.max_scale)
+            scale = torch.cuda.FloatTensor(1).uniform_(min_scale, max_scale)
 
             # Nested patch
             if do_nested:
-                adv_p = transforms.Resize((40,40))(adv_batch[i, :, :, :])   # Defaults: the center (40,40) is the nested region
+                adv_p1 = transforms.Resize((40,40))(adv_batch[i, :, :, :])   # Defaults: the center (40,40) is the nested region
                 mypad0 = nn.ConstantPad2d((int(30), int(30), int(30), int(30)), 0)
-                adv_p_pad = mypad0(adv_p)
+                adv_p_pad = mypad0(adv_p1)
                 adv_p_ = patch_applier(adv_batch[i, :, :, :], adv_p_pad)
+                adv_p2 = transforms.Resize((16, 16))(adv_batch[i, :, :, :])
+                mypad0 = nn.ConstantPad2d((int(42), int(42), int(42), int(42)), 0)
+                adv_p_pad = mypad0(adv_p2)
+                adv_p_ = patch_applier(adv_p_, adv_p_pad)
             else:
                 adv_p_ = adv_batch[i,:,:,:]
 

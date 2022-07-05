@@ -21,7 +21,9 @@ torch.cuda.manual_seed(0)
 np.random.seed(0)
 
 
-def testModel(model, testing_dataloader, test_path, eval_path, is_patch_test, adv_patch, do_rotate=True, do_pespective=True, do_nested=True, location="random"):
+def testModel(model, testing_dataloader, test_path, eval_path, is_patch_test, adv_patch,
+              do_rotate=True, do_pespective=True, do_nested=True, location="random",
+              min_scale=1, max_scale=3.6):
     '''
     tests the model with the following metrics:
 
@@ -59,7 +61,7 @@ def testModel(model, testing_dataloader, test_path, eval_path, is_patch_test, ad
         # patch testing
         if is_patch_test:
             # patch projection
-            adv_batch_t = patch_transformer(adv_patch, steer_true, 200, do_rotate, do_pespective, do_nested, location)
+            adv_batch_t = patch_transformer(adv_patch, steer_true, 200, do_rotate, do_pespective, do_nested, location, min_scale, max_scale)
             p_img_batch = patch_applier(img_cuda, adv_batch_t)
             img_cuda = F.interpolate(p_img_batch, (200, 200))  # Up or Down sample
 
@@ -238,11 +240,11 @@ def plot_loss(experiment_rootdir, fname):
 def evaluation_metrics(pred_steerings, real_steerings, real_labels, pred_prob, classes,
                        attack_mode, normalize=True, title_name = None, saved_path = None, ishow = True):
     ### for the steering angle
-    pred_steerings = np.array(pred_steerings)
-    real_steerings = np.array(real_steerings)
+    pred_steerings = np.array(pred_steerings)*90
+    real_steerings = np.array(real_steerings)*90
     max_h = np.maximum(np.max(pred_steerings), np.max(real_steerings))
     min_h = np.minimum(np.min(pred_steerings), np.min(real_steerings))
-    bins = np.linspace(min_h, max_h, num=50)
+    bins = np.linspace(min_h, max_h, num=100)
     font_blue = {'color': 'blue',
             'size': 16,
             'family': 'Times New Roman',
@@ -257,8 +259,8 @@ def evaluation_metrics(pred_steerings, real_steerings, real_labels, pred_prob, c
     plt.subplot(2, 1, 1)
     plt.title("Steering Angle")
     # plt.text(-0.75, -160, "ASDR:"+str(ASDR), fontdict = font)
-    plt.hist(pred_steerings, bins=bins, alpha=0.5, label='Predicted', color='b')
-    plt.hist(real_steerings, bins=bins, alpha=0.5, label='Real', color='r')
+    plt.hist(pred_steerings, bins=bins, alpha=0.5, label='Patched Prediction', color='b')
+    plt.hist(real_steerings, bins=bins, alpha=0.5, label='Clean Label', color='r')
     # plt.title('Steering angle')
     plt.legend(fontsize=10)
     plt.savefig(os.path.join(saved_path, "histograms.png"), bbox_inches='tight')
@@ -298,8 +300,8 @@ def evaluation_metrics(pred_steerings, real_steerings, real_labels, pred_prob, c
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
         plt.text(j, i, cm[i, j], horizontalalignment="center", color="white" if cm[i, j] > thresh else "black")
 
-    plt.ylabel('Clean label')
-    plt.xlabel('Patched label')
+    plt.ylabel('Clean Label')
+    plt.xlabel('Patched Prediction')
     plt.savefig(os.path.join(saved_path, "confusion.png"))
 
     ### For the metrics: ASDR, EVA, RMSE, mASR, mF1-score
@@ -312,8 +314,8 @@ def evaluation_metrics(pred_steerings, real_steerings, real_labels, pred_prob, c
     RMSE = compute_rmse(pred_steerings, np.zeros(len(pred_steerings)))
     mASR = cm[1, 0] / (cm[1, 0] + cm[1, 1])
     mF1 = cm[1, 0] / (cm[1, 0] + (cm[0, 1] + cm[1, 1])/2)
-    plt.text(0.05, 0.8,  "ASD: " + str( np.around(ASD, 5)*90 ) + "°", fontdict=font_blue)
-    plt.text(0.05, 0.65, "MAE: " + str(np.around(MAE, 5)), fontdict=font_blue)
+    plt.text(0.05, 0.8,  "ASD: " + str( np.around(ASD, 5) ) + "°", fontdict=font_blue)
+    plt.text(0.05, 0.65, "MAE: " + str(np.around(MAE, 5)) + "°", fontdict=font_blue)
     plt.text(0.05, 0.5,  "RMSE:" + str(np.around(RMSE, 5)), fontdict=font_blue)
     plt.text(0.05, 0.35, "mASR:" + str(np.around(mASR, 5)*100) + "%", fontdict=font_red)
     plt.text(0.05, 0.2,  "mF1: " + str(np.around(mF1, 5)*100) + "%", fontdict=font_red)

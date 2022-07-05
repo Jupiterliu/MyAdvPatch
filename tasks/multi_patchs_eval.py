@@ -22,9 +22,9 @@ if __name__ == '__main__':
 
     is_patch_test = True
 
-    patchs_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test16_nopes_lr01_k128_balance10-1_beta10_gamma1_nps001_tv25_scale04-14"
+    patchs_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test18_nopes_lr01_k128_balance100-100_beta10_gamma1_nps001_tv25_scale10-17"
     print("Loaded patches path: ", patchs_path)
-    eval_path = "scale_02-17-random"
+    eval_path = "scale_10-36-random"
     folder = os.path.join(patchs_path, "multi_patchs_eval_result")
     if not os.path.exists(folder):
         os.makedirs(folder)
