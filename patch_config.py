@@ -38,11 +38,11 @@ class HA(BaseConfig):
     def __init__(self):
         super().__init__()
 
-        self.n_epochs = 100  # 70 is already good
+        self.n_epochs = 120  # 70 is already good
         self.batch_size = 128  # defaults: 64
         self.k = 128   # hard-mining
         self.num_workers = 10
-        self.beta = 10
+        self.beta = 25
         self.gamma = 1
 
         self.patch_size = 200
@@ -73,10 +73,10 @@ class YA(BaseConfig):
         super().__init__()
 
         self.n_epochs = 100  # 70 is already good
-        self.batch_size = 64
-        self.k = 64   # hard-mining
+        self.batch_size = 128
+        self.k = 128   # hard-mining
         self.num_workers = 10
-        self.beta = 40
+        self.beta = 50  # Mainly optimize the MSE Loss
         self.gamma = 1
 
         self.patch_size = 200
@@ -86,13 +86,15 @@ class YA(BaseConfig):
         self.is_save_temp = False
 
         self.is_targeted = True  # False0
-        self.steer_target = 0.5
+        self.steer_target = 1
         self.coll_target = 0.
         self.use_old_loss = True  # False or True
 
         self.attack_loss_weight = 1  # origin: 1
         self.nps_loss_weight = 0.01  # origin: 0.01
         self.tv_loss_weight = 2.5  # origin: 2.5
+
+        self.start_learning_rate = 0.1  # reduce by 10 times
 
         self.patch_name = 'YawAttack'
 

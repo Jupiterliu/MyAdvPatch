@@ -4,13 +4,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-if __name__ == "__main__":
-    metrics_result_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test18_nopes_lr01_k128_balance100-100_beta10_gamma1_nps001_tv25_scale10-17/plot_result/metrics_results.txt"
+def plot_metrics_results(path):
+    metrics_result_path = os.path.join(path, "metrics_results.txt")
     metrics_results = np.loadtxt(metrics_result_path)
     plt.figure(figsize=(20, 5))
     min = np.min(metrics_results[:, 0])
     max = np.max(metrics_results[:, 0])
-    x_ticks = np.arange(min, max+0.1, 0.2)
+    x_ticks = np.arange(min, max + 0.1, 0.2)
     plt.xticks(x_ticks)
 
     plt.subplot(1, 2, 1)
@@ -39,6 +39,6 @@ if __name__ == "__main__":
     plt.grid()
     plt.legend()
 
-    # plt.savefig(os.path.join("/root/Python_Program_Remote/MyAdvPatch/saved_patch/test20_nopes_lr01_k128_balance100-100_beta10_gamma1_nps001_tv25_scale5-36/plot_result", 'metrics_results.png'))
+    plt.savefig(os.path.join(path, 'metrics_results.png'))
     plt.tight_layout()
     plt.show()

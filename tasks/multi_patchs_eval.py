@@ -24,10 +24,16 @@ if __name__ == '__main__':
 
     patchs_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test18_nopes_lr01_k128_balance100-100_beta10_gamma1_nps001_tv25_scale10-17"
     print("Loaded patches path: ", patchs_path)
-    eval_path = "scale_10-36-random"
+    test_num = 18
+
+    min_scale = 1
+    max_scale = 3.6
     folder = os.path.join(patchs_path, "multi_patchs_eval_result")
     if not os.path.exists(folder):
         os.makedirs(folder)
+    plot_result = os.path.join(folder, "plot_result")
+    if not os.path.exists(plot_result):
+        os.makedirs(plot_result)
     plot_result_confusion = os.path.join(patchs_path, "confusion")
     if not os.path.exists(plot_result_confusion):
         os.makedirs(plot_result_confusion)
@@ -44,9 +50,11 @@ if __name__ == '__main__':
         result = os.path.join(folder, patch)
         if not os.path.exists(result):
             os.makedirs(result)
+        eval_path = "test{}_patch{}_scale{}-{}".format(int(test_num),int(index),int(i=min_scale*10), int(max_scale*10))
         with torch.no_grad():
-            eva, rmse, ave_accuracy, precision, recall, f_score = testModel(dronet, testing_dataloader,folder, patch, is_patch_test, adv_patch,
-                                                                            do_rotate=True, do_pespective=False, do_nested=True, location="random")
+            eva, rmse, ave_accuracy, precision, recall, f_score = testModel(dronet, testing_dataloader, folder, patch, is_patch_test, adv_patch,
+                                                                            do_rotate=True, do_pespective=True, do_nested=True, location="random",
+                                                                            min_scale=min_scale, max_scale=max_scale)
             all_criterion[index, 0] = index
             all_criterion[index, 1] = eva
             all_criterion[index, 2] = rmse
@@ -65,7 +73,7 @@ if __name__ == '__main__':
                 dict_labels = json.load(f2)
             evaluation_metrics(dict_steerings['pred_steerings'], dict_steerings['real_steerings'],
                                dict_labels['real_labels'], dict_labels['pred_probabilities'],
-                               ['no collision', 'collision'], attack_mode, title_name=eval_path, saved_path=result, ishow=True)
+                               ['no collision', 'collision'], attack_mode, title_name=eval_path, saved_path=plot_result, ishow=True)
             index = index + 1
 
     # all_criterion

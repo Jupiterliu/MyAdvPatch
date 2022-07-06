@@ -238,7 +238,7 @@ def plot_loss(experiment_rootdir, fname):
 
 
 def evaluation_metrics(pred_steerings, real_steerings, real_labels, pred_prob, classes,
-                       attack_mode, normalize=True, title_name = None, saved_path = None, ishow = True):
+                       attack_mode, normalize=True, title_name=None, saved_path=None, ishow=True):
     ### for the steering angle
     pred_steerings = np.array(pred_steerings)*90
     real_steerings = np.array(real_steerings)*90
@@ -258,12 +258,10 @@ def evaluation_metrics(pred_steerings, real_steerings, real_labels, pred_prob, c
     plt.figure(1, figsize=(7, 7))
     plt.subplot(2, 1, 1)
     plt.title("Steering Angle")
-    # plt.text(-0.75, -160, "ASDR:"+str(ASDR), fontdict = font)
     plt.hist(pred_steerings, bins=bins, alpha=0.5, label='Patched Prediction', color='b')
     plt.hist(real_steerings, bins=bins, alpha=0.5, label='Clean Label', color='r')
-    # plt.title('Steering angle')
     plt.legend(fontsize=10)
-    plt.savefig(os.path.join(saved_path, "histograms.png"), bbox_inches='tight')
+    # plt.savefig(os.path.join(saved_path, "histograms.png"), bbox_inches='tight')
 
 
     ### for the collision probability
@@ -275,15 +273,6 @@ def evaluation_metrics(pred_steerings, real_steerings, real_labels, pred_prob, c
     pred_labels[pred_prob >= 0.5] = 1
 
     cm = confusion_matrix(real_labels, pred_labels)
-    # if attack_mode == "hiding_attack":
-    #     asr = cm[1, 0] / (cm[1, 0] + cm[1, 1])
-    #     title_name = title_name + "ASR" + str(asr)
-    # elif attack_mode == "yaw_attack":
-    #     asr = cm[1, 0] / (cm[1, 0] + cm[1, 1])
-    #     title_name = title_name + "ASR" + str(asr)
-    # else:
-    #     asr = cm[0, 1] / (cm[0, 1] + cm[0, 0])
-    #     title_name = title_name + ", ASR-" + str(asr)
     plt.figure(1)
     plt.subplot(2, 2, 3)
     plt.title("Collision Prob.")
@@ -302,7 +291,7 @@ def evaluation_metrics(pred_steerings, real_steerings, real_labels, pred_prob, c
 
     plt.ylabel('Clean Label')
     plt.xlabel('Patched Prediction')
-    plt.savefig(os.path.join(saved_path, "confusion.png"))
+    # plt.savefig(os.path.join(saved_path, "confusion.png"))
 
     ### For the metrics: ASDR, EVA, RMSE, mASR, mF1-score
     plt.figure(1)
@@ -314,13 +303,14 @@ def evaluation_metrics(pred_steerings, real_steerings, real_labels, pred_prob, c
     RMSE = compute_rmse(pred_steerings, np.zeros(len(pred_steerings)))
     mASR = cm[1, 0] / (cm[1, 0] + cm[1, 1])
     mF1 = cm[1, 0] / (cm[1, 0] + (cm[0, 1] + cm[1, 1])/2)
-    plt.text(0.05, 0.8,  "ASD: " + str( np.around(ASD, 5) ) + "°", fontdict=font_blue)
+    plt.text(0.05, 0.8,  "ASD: " + str(np.around(ASD, 5) ) + "°", fontdict=font_blue)
     plt.text(0.05, 0.65, "MAE: " + str(np.around(MAE, 5)) + "°", fontdict=font_blue)
     plt.text(0.05, 0.5,  "RMSE:" + str(np.around(RMSE, 5)), fontdict=font_blue)
     plt.text(0.05, 0.35, "mASR:" + str(np.around(mASR, 5)*100) + "%", fontdict=font_red)
     plt.text(0.05, 0.2,  "mF1: " + str(np.around(mF1, 5)*100) + "%", fontdict=font_red)
     if ishow:
         # plt.tight_layout()
-        plt.suptitle("Evaluation Metrics:" + attack_mode + ":" + title_name)
-        plt.savefig(os.path.join(saved_path, "EvaluationMetrics"))
+        plt.suptitle(attack_mode + ":" + title_name)
+        plt.savefig(os.path.join(saved_path, title_name))
         plt.show()
+    return ASD, MAE, RMSE, mASR, mF1

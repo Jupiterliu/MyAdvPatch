@@ -78,7 +78,7 @@ class PatchTrainer(object):
         root_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch"
         min_scale = 0.5
         max_scale = 3.6
-        saved_patch_name = "test20_nopes_lr01_k128_balance100-100_beta10_gamma1_nps001_tv25_scale{}-{}".format(int(min_scale*10), int(max_scale*10))
+        saved_patch_name = "test20_pes_lr01_k128_balance100-100_beta50_gamma1_nps001_tv25_scale{}-{}".format(int(min_scale*10), int(max_scale*10))
         patch_path = os.path.join(root_path, saved_patch_name, "patchs")
         if not os.path.exists(patch_path):
             os.makedirs(patch_path)

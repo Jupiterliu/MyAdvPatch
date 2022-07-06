@@ -154,8 +154,8 @@ class PatchTransformer(nn.Module):
         self.max_contrast = 1.2  # 1.2
         self.min_brightness = -0.1  # -0.1
         self.max_brightness = 0.1  # 0.1
-        self.min_scale = 1 # Scale the patch size from (patch_size * min_scale) to (patch_size * max_scale)
-        self.max_scale = 3.6
+        # self.min_scale = 1 # Scale the patch size from (patch_size * min_scale) to (patch_size * max_scale)
+        # self.max_scale = 3.6
         self.noise_factor = 0.1
         self.min_angle = -8  #-10 / 180 * math.pi
         self.max_angle = 8  #10 / 180 * math.pi
