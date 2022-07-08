@@ -72,7 +72,7 @@ class YA(BaseConfig):
     def __init__(self):
         super().__init__()
 
-        self.n_epochs = 100  # 70 is already good
+        self.n_epochs = 150  # 70 is already good
         self.batch_size = 128
         self.k = 128   # hard-mining
         self.num_workers = 10

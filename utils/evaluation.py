@@ -298,11 +298,27 @@ def evaluation_metrics(pred_steerings, real_steerings, real_labels, pred_prob, c
     plt.subplot(2, 2, 4)
     plt.axis("off")
     plt.title("Metrics")
-    ASD = np.mean(np.abs((pred_steerings - real_steerings)))
-    MAE = mean_ablosute_error(pred_steerings, np.zeros(len(pred_steerings)))
-    RMSE = compute_rmse(pred_steerings, np.zeros(len(pred_steerings)))
-    mASR = cm[1, 0] / (cm[1, 0] + cm[1, 1])
-    mF1 = cm[1, 0] / (cm[1, 0] + (cm[0, 1] + cm[1, 1])/2)
+    if attack_mode == "HA":
+        ASD = np.mean(np.abs((pred_steerings - real_steerings)))
+        MAE = mean_ablosute_error(pred_steerings, np.zeros(len(pred_steerings)))
+        RMSE = compute_rmse(pred_steerings, np.zeros(len(pred_steerings)))
+        mASR = cm[1, 0] / (cm[1, 0] + cm[1, 1])
+        mF1 = cm[1, 0] / (cm[1, 0] + (cm[0, 1] + cm[1, 1])/2)
+    elif attack_mode == "YA":
+        ASD = np.mean(np.abs((pred_steerings - real_steerings)))
+        MAE = mean_ablosute_error(pred_steerings, np.ones(len(pred_steerings))*90)
+        RMSE = compute_rmse(pred_steerings, np.ones(len(pred_steerings))*90)
+        mASR = cm[1, 0] / (cm[1, 0] + cm[1, 1])
+        mF1 = cm[1, 0] / (cm[1, 0] + (cm[0, 1] + cm[1, 1]) / 2)
+    elif attack_mode == "CA":
+        # False
+        ASD = np.mean(np.abs((pred_steerings - real_steerings)))
+        MAE = mean_ablosute_error(pred_steerings, np.zeros(len(pred_steerings)))
+        RMSE = compute_rmse(pred_steerings, np.zeros(len(pred_steerings)))
+        mASR = cm[1, 0] / (cm[1, 0] + cm[1, 1])
+        mF1 = cm[1, 0] / (cm[1, 0] + (cm[0, 1] + cm[1, 1]) / 2)
+    else:
+        print("attack_mode is wrong!!!!")
     plt.text(0.05, 0.8,  "ASD: " + str(np.around(ASD, 5) ) + "°", fontdict=font_blue)
     plt.text(0.05, 0.65, "MAE: " + str(np.around(MAE, 5)) + "°", fontdict=font_blue)
     plt.text(0.05, 0.5,  "RMSE:" + str(np.around(RMSE, 5)), fontdict=font_blue)

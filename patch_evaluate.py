@@ -27,9 +27,9 @@ if __name__ == '__main__':
     testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=64, shuffle=True, num_workers=10)
 
     test_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test19_pes_lr01_k128_balance100-100_beta25_gamma1_nps001_tv25_scale5-36"
-    patchfile = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test19_pes_lr01_k128_balance100-100_beta25_gamma1_nps001_tv25_scale5-36/patchs/20220705-203428_steer0.0_coll0.0_ep03.png"
+    patchfile = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test19_pes_lr01_k128_balance100-100_beta25_gamma1_nps001_tv25_scale5-36/patchs/20220705-203428_steer0.0_coll0.0_ep84.png"
     test_num = 19
-    patch_epoch = 3
+    patch_epoch = 84
     # adv_patch_cpu = torch.rand((3, 200, 200))
     # im = transforms.ToPILImage('RGB')(adv_patch_cpu)
     # plt.imshow(im)
@@ -46,11 +46,11 @@ if __name__ == '__main__':
     min_scale = 1.8
     max_scale = 1.8
     do_rotate = True
-    do_pespective = False
+    do_pespective = True
     do_nested = True
     location = "random"
 
-    plot_result = os.path.join(test_path, "plot_result")
+    plot_result = os.path.join(test_path, "fixed_dis_plot_result")
     if not os.path.exists(plot_result):
         os.makedirs(plot_result)
     fixed_distance_result = os.path.join(test_path, "fixed_distance")

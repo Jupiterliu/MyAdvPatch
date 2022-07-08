@@ -22,24 +22,24 @@ if __name__ == '__main__':
 
     is_patch_test = True
 
-    patchs_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test18_nopes_lr01_k128_balance100-100_beta10_gamma1_nps001_tv25_scale10-17"
+    patchs_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test19_pes_lr01_k128_balance100-100_beta25_gamma1_nps001_tv25_scale5-36"
     print("Loaded patches path: ", patchs_path)
-    test_num = 18
+    test_num = 19
 
-    min_scale = 1
+    min_scale = 0.5
     max_scale = 3.6
     folder = os.path.join(patchs_path, "multi_patchs_eval_result")
     if not os.path.exists(folder):
         os.makedirs(folder)
-    plot_result = os.path.join(folder, "plot_result")
+    plot_result = os.path.join(folder, "multi_plot_result")
     if not os.path.exists(plot_result):
         os.makedirs(plot_result)
-    plot_result_confusion = os.path.join(patchs_path, "confusion")
-    if not os.path.exists(plot_result_confusion):
-        os.makedirs(plot_result_confusion)
-    plot_result_histograms = os.path.join(patchs_path, "histograms")
-    if not os.path.exists(plot_result_histograms):
-        os.makedirs(plot_result_histograms)
+    # plot_result_confusion = os.path.join(patchs_path, "confusion")
+    # if not os.path.exists(plot_result_confusion):
+    #     os.makedirs(plot_result_confusion)
+    # plot_result_histograms = os.path.join(patchs_path, "histograms")
+    # if not os.path.exists(plot_result_histograms):
+    #     os.makedirs(plot_result_histograms)
 
     patchs = sorted(os.listdir(os.path.join(patchs_path, "patchs")))
     all_criterion = np.zeros((len(patchs), 7))
@@ -50,7 +50,7 @@ if __name__ == '__main__':
         result = os.path.join(folder, patch)
         if not os.path.exists(result):
             os.makedirs(result)
-        eval_path = "test{}_patch{}_scale{}-{}".format(int(test_num),int(index),int(i=min_scale*10), int(max_scale*10))
+        eval_path = "test{}_patch{}_scale{}-{}".format(int(test_num),int(index),int(min_scale*10), int(max_scale*10))
         with torch.no_grad():
             eva, rmse, ave_accuracy, precision, recall, f_score = testModel(dronet, testing_dataloader, folder, patch, is_patch_test, adv_patch,
                                                                             do_rotate=True, do_pespective=True, do_nested=True, location="random",
