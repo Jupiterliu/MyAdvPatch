@@ -22,7 +22,7 @@ np.random.seed(0)
 
 
 def testModel(model, testing_dataloader, test_path, eval_path, is_patch_test, adv_patch,
-              do_rotate=True, do_pespective=True, do_nested=True, location="random",
+              do_rotate=True, do_pespective=True, nested=0, location="random",
               min_scale=1, max_scale=3.6):
     '''
     tests the model with the following metrics:
@@ -61,7 +61,7 @@ def testModel(model, testing_dataloader, test_path, eval_path, is_patch_test, ad
         # patch testing
         if is_patch_test:
             # patch projection
-            adv_batch_t = patch_transformer(adv_patch, steer_true, 200, do_rotate, do_pespective, do_nested, location, min_scale, max_scale)
+            adv_batch_t = patch_transformer(adv_patch, steer_true, 200, 400, do_rotate, do_pespective, nested, location, min_scale, max_scale)
             p_img_batch = patch_applier(img_cuda, adv_batch_t)
             img_cuda = F.interpolate(p_img_batch, (200, 200))  # Up or Down sample
 

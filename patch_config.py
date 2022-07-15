@@ -38,14 +38,14 @@ class HA(BaseConfig):
     def __init__(self):
         super().__init__()
 
-        self.n_epochs = 120  # 70 is already good
+        self.n_epochs = 100  # 70 is already good
         self.batch_size = 128  # defaults: 64
         self.k = 128   # hard-mining
         self.num_workers = 10
-        self.beta = 25
+        self.beta = 30
         self.gamma = 1
 
-        self.patch_size = 200
+        self.patch_size = 400
         self.image_size = 200
         self.image_mode = "rgb"  # "rgb" or "gray"
 
@@ -72,7 +72,7 @@ class YA(BaseConfig):
     def __init__(self):
         super().__init__()
 
-        self.n_epochs = 150  # 70 is already good
+        self.n_epochs = 100  # 70 is already good
         self.batch_size = 128
         self.k = 128   # hard-mining
         self.num_workers = 10
@@ -86,7 +86,7 @@ class YA(BaseConfig):
         self.is_save_temp = False
 
         self.is_targeted = True  # False0
-        self.steer_target = 1
+        self.steer_target = 0.5
         self.coll_target = 0.
         self.use_old_loss = True  # False or True
 

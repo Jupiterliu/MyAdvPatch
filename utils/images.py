@@ -14,6 +14,7 @@ import os
 from PIL import Image
 import numpy as np
 
+
 # class PatchTransformer(nn.Module):
 #     """PatchTransformer: transforms batch of patches
 #
@@ -150,23 +151,25 @@ class PatchTransformer(nn.Module):
 
     def __init__(self):
         super(PatchTransformer, self).__init__()
-        self.min_contrast = 0.8  # 0.8
-        self.max_contrast = 1.2  # 1.2
-        self.min_brightness = -0.1  # -0.1
-        self.max_brightness = 0.1  # 0.1
+        self.min_contrast = 0.7  # 0.8
+        self.max_contrast = 1.3  # 1.2
+        self.min_brightness = -0.2  # -0.1
+        self.max_brightness = 0.2  # 0.1
         # self.min_scale = 1 # Scale the patch size from (patch_size * min_scale) to (patch_size * max_scale)
         # self.max_scale = 3.6
-        self.noise_factor = 0.1
+        self.noise_factor = 0.2
         self.min_angle = -8  #-10 / 180 * math.pi
         self.max_angle = 8  #10 / 180 * math.pi
+        # self.nested_size = 0.5
         self.min_distortion = 0.
         self.max_distortion = 0.2
         self.medianpooler = MedianPool2d(7, same=True)
 
-    def forward(self, adv_patch, steer_true, img_size, do_rotate=True, do_pespective=True, do_nested=True, location="random", min_scale=1, max_scale=3.6):
+    def forward(self, adv_patch, steer_true, img_size, patch_size, do_rotate=True, do_pespective=True, nested=1, nested_size=0.5,location="random", min_scale=1, max_scale=3.6):
         # adv_patch = F.conv2d(adv_patch.unsqueeze(0),self.kernel,padding=(2,2))
-        adv_patch = transforms.Resize((100, 100))(adv_patch)
-        adv_patch = self.medianpooler(adv_patch.unsqueeze(0))
+        adv_patch = transforms.Resize((int(patch_size * 0.5), int(patch_size * 0.5)))(adv_patch)
+        # adv_patch = self.medianpooler(adv_patch.unsqueeze(0))
+        adv_patch = adv_patch.unsqueeze(0)
         adv_batch = adv_patch.expand(steer_true.size(0), -1, -1, -1)
         batch_size = torch.Size((steer_true.size(0), 1))
 
@@ -192,45 +195,103 @@ class PatchTransformer(nn.Module):
 
         adv_batch = torch.clamp(adv_batch, 0.000001, 0.99999)  # compress to min-max, not standardize
 
+        if do_rotate:
+            angle = torch.cuda.FloatTensor(steer_true.size(0)).uniform_(self.min_angle, self.max_angle)
+        else:
+            angle = torch.cuda.FloatTensor(steer_true.size(0)).fill_(0)
+        if do_pespective:
+            distortion = torch.cuda.FloatTensor(steer_true.size(0)).uniform_(self.min_distortion, self.max_distortion)
+            p = torch.cuda.FloatTensor(steer_true.size(0)).uniform_(0, 1)
+        else:
+            distortion = torch.cuda.FloatTensor(steer_true.size(0)).fill_(0)
+            p = torch.cuda.FloatTensor(steer_true.size(0)).fill_(0)
+        scale = torch.cuda.FloatTensor(steer_true.size(0)).uniform_(min_scale, max_scale)
+
         for i in range(adv_batch.size(0)):
-            if do_rotate:
-                angle = torch.cuda.FloatTensor(1).uniform_(self.min_angle, self.max_angle)
-            else:
-                angle = torch.cuda.FloatTensor(1).fill_(0)
-            if do_pespective:
-                distortion = torch.cuda.FloatTensor(1).uniform_(self.min_distortion, self.max_distortion)
-                p = torch.cuda.FloatTensor(1).uniform_(0, 1)
-            else:
-                distortion = torch.cuda.FloatTensor(1).fill_(0)
-                p = torch.cuda.FloatTensor(1).fill_(0)
-            scale = torch.cuda.FloatTensor(1).uniform_(min_scale, max_scale)
 
             # Nested patch
-            if do_nested:
-                adv_p1 = transforms.Resize((40,40))(adv_batch[i, :, :, :])   # Defaults: the center (40,40) is the nested region
-                mypad0 = nn.ConstantPad2d((int(30), int(30), int(30), int(30)), 0)
-                adv_p_pad = mypad0(adv_p1)
-                adv_p_ = patch_applier(adv_batch[i, :, :, :], adv_p_pad)
-                adv_p2 = transforms.Resize((16, 16))(adv_batch[i, :, :, :])
-                mypad0 = nn.ConstantPad2d((int(42), int(42), int(42), int(42)), 0)
-                adv_p_pad = mypad0(adv_p2)
-                adv_p_ = patch_applier(adv_p_, adv_p_pad)
-            else:
-                adv_p_ = adv_batch[i,:,:,:]
+            if nested == 0:
+                adv_p_ = adv_batch[i, :, :, :]
+            elif nested == 1:
+                pad_ = (adv_patch.size(-1) - int(adv_patch.size(-1) * nested_size))/2
+                adv_p1 = transforms.Resize((int(adv_patch.size(-1) * nested_size), int(adv_patch.size(-1) * nested_size)))(
+                    adv_batch[i, :, :, :])  # Defaults: the center (40,40) is the nested region
+                mypad0 = nn.ConstantPad2d((int(pad_), int(pad_), int(pad_), int(pad_)), 0)
+                adv_p1 = mypad0(adv_p1)
+                adv_p_ = patch_applier(adv_batch[i, :, :, :], adv_p1)
+            elif nested == 2:
+                pad_ = (adv_patch.size(-1) - int(adv_patch.size(-1) * nested_size)) / 2
+                pad__ = (adv_patch.size(-1) - int(adv_patch.size(-1) * nested_size * nested_size)) / 2
+                adv_p1 = transforms.Resize((int(adv_patch.size(-1) * nested_size), int(adv_patch.size(-1) * nested_size)))(adv_batch[i, :, :, :])   # Defaults: the center (40,40) is the nested region
+                mypad0 = nn.ConstantPad2d((int(pad_), int(pad_), int(pad_), int(pad_)), 0)
+                adv_p1 = mypad0(adv_p1)
+                adv_p_ = patch_applier(adv_batch[i, :, :, :], adv_p1)
+                adv_p2 = transforms.Resize((int(adv_patch.size(-1) * nested_size * nested_size), int(adv_patch.size(-1) * nested_size * nested_size)))(adv_batch[i, :, :, :])
+                mypad0 = nn.ConstantPad2d((int(pad__), int(pad__), int(pad__), int(pad__)), 0)
+                adv_p2 = mypad0(adv_p2)
+                adv_p_ = patch_applier(adv_p_, adv_p2)
+            elif nested == 3:
+                pad_ = (adv_patch.size(-1) - int(adv_patch.size(-1) * nested_size)) / 2
+                pad__ = (adv_patch.size(-1) - int(adv_patch.size(-1) * nested_size * nested_size)) / 2
+                pad___ = (adv_patch.size(-1) - int(adv_patch.size(-1) * nested_size * nested_size * nested_size)) / 2
+                adv_p1 = transforms.Resize(
+                    (int(adv_patch.size(-1) * nested_size), int(adv_patch.size(-1) * nested_size)))(
+                    adv_batch[i, :, :, :])  # Defaults: the center (40,40) is the nested region
+                mypad0 = nn.ConstantPad2d((int(pad_+0.5), int(pad_), int(pad_+0.5), int(pad_)), 0)
+                adv_p1 = mypad0(adv_p1)
+                adv_p_ = patch_applier(adv_batch[i, :, :, :], adv_p1)
+                adv_p2 = transforms.Resize((int(adv_patch.size(-1) * nested_size * nested_size),
+                                            int(adv_patch.size(-1) * nested_size * nested_size)))(
+                    adv_batch[i, :, :, :])
+                mypad0 = nn.ConstantPad2d((int(pad__+0.5), int(pad__), int(pad__+0.5), int(pad__)), 0)
+                adv_p2 = mypad0(adv_p2)
+                adv_p_ = patch_applier(adv_p_, adv_p2)
+                adv_p3 = transforms.Resize((int(adv_patch.size(-1) * nested_size * nested_size * nested_size),
+                                            int(adv_patch.size(-1) * nested_size * nested_size * nested_size)))(
+                    adv_batch[i, :, :, :])
+                mypad0 = nn.ConstantPad2d((int(pad___+0.5), int(pad___), int(pad___+0.5), int(pad___)), 0)
+                adv_p3 = mypad0(adv_p3)
+                adv_p_ = patch_applier(adv_p_, adv_p3)
+            elif nested == 4:
+                pad_ = (adv_patch.size(-1) - int(adv_patch.size(-1) * nested_size)) / 2
+                pad__ = (adv_patch.size(-1) - int(adv_patch.size(-1) * nested_size * nested_size)) / 2
+                pad___ = (adv_patch.size(-1) - int(adv_patch.size(-1) * nested_size * nested_size * nested_size)) / 2
+                pad____ = (adv_patch.size(-1) - int(adv_patch.size(-1) * nested_size * nested_size * nested_size * nested_size)) / 2
+                adv_p1 = transforms.Resize(
+                    (int(adv_patch.size(-1) * nested_size), int(adv_patch.size(-1) * nested_size)))(
+                    adv_batch[i, :, :, :])  # Defaults: the center (40,40) is the nested region
+                mypad0 = nn.ConstantPad2d((int(pad_+0.5), int(pad_), int(pad_+0.5), int(pad_)), 0)
+                adv_p1 = mypad0(adv_p1)
+                adv_p_ = patch_applier(adv_batch[i, :, :, :], adv_p1)
+                adv_p2 = transforms.Resize((int(adv_patch.size(-1) * nested_size * nested_size),
+                                            int(adv_patch.size(-1) * nested_size * nested_size)))(
+                    adv_batch[i, :, :, :])
+                mypad0 = nn.ConstantPad2d((int(pad__+0.5), int(pad__), int(pad__+0.5), int(pad__)), 0)
+                adv_p2 = mypad0(adv_p2)
+                adv_p_ = patch_applier(adv_p_, adv_p2)
+                adv_p3 = transforms.Resize((int(adv_patch.size(-1) * nested_size * nested_size * nested_size),
+                                            int(adv_patch.size(-1) * nested_size * nested_size * nested_size)))(
+                    adv_batch[i, :, :, :])
+                mypad0 = nn.ConstantPad2d((int(pad___+0.5), int(pad___), int(pad___+0.5), int(pad___)), 0)
+                adv_p3 = mypad0(adv_p3)
+                adv_p_ = patch_applier(adv_p_, adv_p3)
+                adv_p4 = transforms.Resize(
+                    (int(adv_patch.size(-1) * nested_size * nested_size * nested_size * nested_size),
+                     int(adv_patch.size(-1) * nested_size * nested_size * nested_size * nested_size)))(
+                    adv_batch[i, :, :, :])
+                mypad0 = nn.ConstantPad2d((int(pad____ + 0.5), int(pad____), int(pad____ + 0.5), int(pad____)), 0)
+                adv_p4 = mypad0(adv_p4)
+                adv_p_ = patch_applier(adv_p_, adv_p4)
 
             # Scale
-            adv_b_scaled = transforms.Resize((int(adv_batch.size(-1) * scale), int(adv_batch.size(-1) * scale)))(adv_p_)
-            # img0 = transforms.ToPILImage('RGB')(adv_b_scaled)
-            # subplot(3, 3, 1)
-            # plt.imshow(img0)
-            # plt.show()
+            adv_b_scaled = transforms.Resize((int(adv_batch.size(-1) * scale[i]), int(adv_batch.size(-1) * scale[i])))(adv_p_)
 
             # Perspective
-            perspectives = transforms.RandomPerspective(distortion_scale=distortion, p=p.cpu(), fill=0)
+            perspectives = transforms.RandomPerspective(distortion_scale=distortion[i], p=p[i].cpu(), fill=0)
             adv_b_perspective = perspectives(adv_b_scaled)
 
             # Rotation
-            rotations = transforms.RandomRotation((angle, angle), expand=True, fill=0)
+            rotations = transforms.RandomRotation((angle[i], angle[i]), expand=True, fill=0, interpolation=Image.BILINEAR)  #Image.BILINEAR or 2
             adv_b_rotation = rotations(adv_b_perspective)
 
             # Location: random, centre, corner
@@ -260,7 +321,7 @@ class PatchTransformer(nn.Module):
                 adv_batch_t = adv_b_pad.unsqueeze(0)
             else:
                 adv_batch_t = torch.cat((adv_batch_t, adv_b_pad.unsqueeze(0)), 0)
-        # adv_batch_t = torch.clamp(adv_batch_t, 0.000001, 0.999999)
+        adv_batch_t = torch.clamp(adv_batch_t, 0., 0.9999999999)
 
         return adv_batch_t
 
@@ -406,5 +467,4 @@ def load_data_detection(imgpath, shape, jitter, hue, saturation, exposure):
     img, flip, dx, dy, sx, sy = data_augmentation(img, shape, jitter, hue, saturation, exposure)
     label = fill_truth_detection(labpath, img.width, img.height, flip, dx, dy, 1. / sx, 1. / sy)
     return img, label
-
 

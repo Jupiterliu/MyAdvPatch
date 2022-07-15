@@ -137,7 +137,7 @@ class DronetDataset(torch.utils.data.Dataset):
         img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         if self.img_mode == "gray":
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        img = cv2.resize(img, (320, 240))
+        img = cv2.resize(img, (320, 240), interpolation=cv2.INTER_LINEAR)
         img = self.central_image_crop(img, 200, 200)
         # img = self.central_image_crop(img, 416, 416)
         img = np.asarray(img, dtype=np.float32) * np.float32(1.0 / 255.0)

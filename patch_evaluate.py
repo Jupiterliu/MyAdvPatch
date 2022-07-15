@@ -26,10 +26,10 @@ if __name__ == '__main__':
     testing_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'testing', image_mode ,augmentation=False)
     testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=64, shuffle=True, num_workers=10)
 
-    test_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test19_pes_lr01_k128_balance100-100_beta25_gamma1_nps001_tv25_scale5-36"
-    patchfile = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test19_pes_lr01_k128_balance100-100_beta25_gamma1_nps001_tv25_scale5-36/patchs/20220705-203428_steer0.0_coll0.0_ep84.png"
-    test_num = 19
-    patch_epoch = 84
+    test_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test23_p400_lr01_k128_balance100-100_beta30_gamma1_nps001_tv25_nested3_scale1-18"
+    patchfile = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test23_p400_lr01_k128_balance100-100_beta30_gamma1_nps001_tv25_nested3_scale1-18/patchs/20220713-112636_steer0.0_coll0.0_ep058.png"
+    test_num = 23
+    patch_epoch = 58
     # adv_patch_cpu = torch.rand((3, 200, 200))
     # im = transforms.ToPILImage('RGB')(adv_patch_cpu)
     # plt.imshow(im)
@@ -41,19 +41,19 @@ if __name__ == '__main__':
     is_patch_test = True
 
     is_distance_test = True
-    fixed_distance = np.arange(0.5, 3.7, 0.1)
+    fixed_distance = np.arange(0.1, 1.9, 0.1)
     metrics_results = np.zeros((len(fixed_distance), 6))
     min_scale = 1.8
     max_scale = 1.8
     do_rotate = True
     do_pespective = True
-    do_nested = True
+    nested = 3
     location = "random"
 
-    plot_result = os.path.join(test_path, "fixed_dis_plot_result")
+    plot_result = os.path.join(test_path, "fixed_dis_plot_result_nested")
     if not os.path.exists(plot_result):
         os.makedirs(plot_result)
-    fixed_distance_result = os.path.join(test_path, "fixed_distance")
+    fixed_distance_result = os.path.join(test_path, "fixed_distance_nested")
     if not os.path.exists(fixed_distance_result):
         os.makedirs(fixed_distance_result)
 
@@ -67,7 +67,7 @@ if __name__ == '__main__':
                 os.makedirs(results)
             with torch.no_grad():
                 testModel(dronet, testing_dataloader, fixed_distance_result, eval_path, is_patch_test, adv_patch,
-                          do_rotate=do_rotate, do_pespective=do_pespective, do_nested=do_nested, location=location,
+                          do_rotate=do_rotate, do_pespective=do_pespective, nested=nested, location=location,
                           min_scale=i, max_scale=i)
 
                 # Compute histograms from predicted and real steerings; confusion matrix from predicted and real labels

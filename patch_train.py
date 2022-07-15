@@ -76,9 +76,14 @@ class PatchTrainer(object):
         # print(f'One epoch is {len(training_dataloader)}')
 
         root_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch"
-        min_scale = 0.5
-        max_scale = 3.6
-        saved_patch_name = "test20_pes_lr01_k128_balance100-100_beta50_gamma1_nps001_tv25_scale{}-{}".format(int(min_scale*10), int(max_scale*10))
+        min_scale = 0.1
+        max_scale = 2.
+        do_rotate = True
+        do_pespective = True
+        nested = 4
+        nested_size = 0.5
+        location = "random"
+        saved_patch_name = "test2_p400_lr01_balance1-1_nps001_tv25_nested4-05_scale{:0>2d}-{:0>2d}".format(int(min_scale*10), int(max_scale*10))
         patch_path = os.path.join(root_path, saved_patch_name, "patchs")
         if not os.path.exists(patch_path):
             os.makedirs(patch_path)
@@ -95,9 +100,9 @@ class PatchTrainer(object):
             ep_tv_loss = 0
             ep_loss = 0
             bt0 = time.time()
-            other_val = (self.config.gamma - torch.exp(torch.Tensor([-1 * (0.1) * (epoch - self.config.beta)]))).float().cuda()
-            beta = torch.max(torch.Tensor([0]).float().cuda(), other_val)
-            # beta = torch.Tensor([1.0]).float().cuda()
+            # other_val = (self.config.gamma - torch.exp(torch.Tensor([-1 * (0.1) * (epoch - self.config.beta)]))).float().cuda()
+            # beta = torch.max(torch.Tensor([0]).float().cuda(), other_val)
+            beta = torch.Tensor([1.0]).float().cuda()
             for i_batch, (img_batch, steer_true, coll_true) in tqdm(enumerate(training_dataloader),
                                                                     desc=f'Running epoch {epoch}', total=self.epoch_length):
                 with autograd.detect_anomaly():
@@ -110,11 +115,11 @@ class PatchTrainer(object):
                     # patch projection
                     if self.config.image_mode == "gray":
                         adv_patch = transforms.Grayscale()(adv_patch)
-                    adv_batch_t = self.patch_transformer(adv_patch, steer_true, self.config.image_size,
-                                                         do_rotate=True, do_pespective=True, do_nested=True, location="random",
-                                                         min_scale=min_scale, max_scale=max_scale)
+                    adv_batch_t = self.patch_transformer(adv_patch, steer_true, self.config.image_size, self.config.patch_size,
+                                                         do_rotate=do_rotate, do_pespective=do_pespective, nested=nested, nested_size=nested_size,
+                                                         location=location, min_scale=min_scale, max_scale=max_scale)
                     p_img_batch = self.patch_applier(img_batch, adv_batch_t)
-                    p_img_batch = F.interpolate(p_img_batch, (200, 200))  # Up or Down sample
+                    # p_img_batch = F.interpolate(p_img_batch, (200, 200), mode='bilinear')  # Up or Down sample
 
                     if self.config.is_save_temp:
                         for i in range(p_img_batch.size(0)):
@@ -122,7 +127,7 @@ class PatchTrainer(object):
                             # image = np.transpose(Tensor.detach().cpu().numpy(), (1, 2, 0))
                             patcded_image = transforms.ToPILImage('RGB')(Tensor)
                             plt.imshow(patcded_image)
-                            patcded_image.save(os.path.join(root_path, saved_patch_name, "temp", "temp_batch{:0>2d}_im{:0>2d}.png".format(i_batch, i)))
+                            patcded_image.save(os.path.join(root_path, saved_patch_name, "temp", "temp_batch{:0>2d}_im{:0>3d}.png".format(i_batch, i)))
 
                     # Prediction
                     steer_pred, coll_pred = self.dronet_model(p_img_batch)
@@ -178,7 +183,7 @@ class PatchTrainer(object):
 
             im = transforms.ToPILImage('RGB')(adv_patch_cpu)
             plt.imshow(im)
-            im.save(os.path.join(patch_path, "{}_steer{}_coll{}_ep{:0>2d}.png".format(time_str, self.config.steer_target, self.config.coll_target, epoch)))
+            im.save(os.path.join(patch_path, "{}_steer{}_coll{}_ep{:0>3d}.png".format(time_str, self.config.steer_target, self.config.coll_target, epoch)))
 
             scheduler.step(ep_loss)
             if True:
