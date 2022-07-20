@@ -23,7 +23,7 @@ class BaseConfig(object):
 
         self.patch_name = 'Base'
 
-        self.scheduler_factory = lambda x: optim.lr_scheduler.ReduceLROnPlateau(x, 'min', patience=10)  # default: patience=40
+        self.scheduler_factory = lambda x: optim.lr_scheduler.ReduceLROnPlateau(x, 'min', patience=40)  # default: patience=40
         self.max_tv = 0.165
 
         self.batch_size = 20
@@ -42,7 +42,7 @@ class HA(BaseConfig):
         self.batch_size = 128  # defaults: 64
         self.k = 128   # hard-mining
         self.num_workers = 10
-        self.beta = 30
+        self.beta = 2
         self.gamma = 1
 
         self.patch_size = 400
@@ -60,9 +60,9 @@ class HA(BaseConfig):
         self.nps_loss_weight = 0.01  # origin: 0.01
         self.tv_loss_weight = 2.5  # origin: 2.5
 
-        self.start_learning_rate = 0.1  # reduce by 10 times
+        self.start_learning_rate = 0.05  # reduce by 10 times default: 0.03
 
-        self.patch_name = 'HidingAttack'
+        self.patch_name = 'HA'
 
 class YA(BaseConfig):
     """
@@ -76,17 +76,17 @@ class YA(BaseConfig):
         self.batch_size = 128
         self.k = 128   # hard-mining
         self.num_workers = 10
-        self.beta = 50  # Mainly optimize the MSE Loss
+        self.beta = 2  # Mainly optimize the MSE Loss
         self.gamma = 1
 
-        self.patch_size = 200
+        self.patch_size = 400
         self.image_size = 200
         self.image_mode = "rgb"  # "rgb" or "gray"
 
         self.is_save_temp = False
 
         self.is_targeted = True  # False0
-        self.steer_target = 0.5
+        self.steer_target = 1
         self.coll_target = 0.
         self.use_old_loss = True  # False or True
 
@@ -94,14 +94,14 @@ class YA(BaseConfig):
         self.nps_loss_weight = 0.01  # origin: 0.01
         self.tv_loss_weight = 2.5  # origin: 2.5
 
-        self.start_learning_rate = 0.1  # reduce by 10 times
+        self.start_learning_rate = 0.05  # reduce by 10 times default: 0.03
 
-        self.patch_name = 'YawAttack'
+        self.patch_name = 'YA'
 
 
-class CA(BaseConfig):
+class OA(BaseConfig):
     """
-    Generate a physical patch for conducting Collision Attack.
+    Generate a physical patch for conducting Obstacle Attack.
     """
 
     def __init__(self):
@@ -109,12 +109,12 @@ class CA(BaseConfig):
 
         self.n_epochs = 100  # 70 is already good
         self.batch_size = 128  # defaults: 64
-        self.k = 64   # hard-mining
+        self.k = 128   # hard-mining
         self.num_workers = 10
-        self.beta = 40
+        self.beta = 5
         self.gamma = 1
 
-        self.patch_size = 200
+        self.patch_size = 400
         self.image_size = 200
         self.image_mode = "rgb"  # "rgb" or "gray"
 
@@ -129,12 +129,14 @@ class CA(BaseConfig):
         self.nps_loss_weight = 0.01  # origin: 0.01
         self.tv_loss_weight = 2.5  # origin: 2.5
 
-        self.patch_name = 'CollisionAttack'
+        self.start_learning_rate = 0.05  # reduce by 10 times default: 0.03
+
+        self.patch_name = 'OA'
 
 
 patch_configs = {
     "base": BaseConfig,
     "hiding_attack": HA,
     "yaw_attack": YA,
-    "collision_attack": CA
+    "obstacle_attack": OA
 }

@@ -10,8 +10,7 @@ import json
 
 if __name__ == '__main__':
     # Load testing data
-    image_mode = "rgb"
-    attack_mode = "YA"  # yaw_attack, collision_attack
+    image_mode = "rgb"  # yaw_attack, collision_attack
     testing_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'testing', image_mode,
                                     augmentation=False)
     testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=64, shuffle=True, num_workers=10)
@@ -22,24 +21,28 @@ if __name__ == '__main__':
 
     is_patch_test = True
 
-    patchs_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test23_p400_lr01_k128_balance100-100_beta30_gamma1_nps001_tv25_nested3_scale1-18"
+    patchs_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test13_p400_lr01_balance100-100_beta2_nps001_tv25_nest4_scale01-09"
     print("Loaded patches path: ", patchs_path)
-    test_num = 23
+    test_num = 13
 
-    min_scale = 0.1
-    max_scale = 1.8
+    attack_mode = "HA"
+    steer_target = 0.5
+
+    min_scale = 0.5
+    max_scale = 3.5
+    do_rotate = True
+    do_pespective = True
+    nested = 4
+    nested_size = 0.5
+    location = "random"
+    centre = False
+
     folder = os.path.join(patchs_path, "multi_patchs_eval_result")
     if not os.path.exists(folder):
         os.makedirs(folder)
     plot_result = os.path.join(folder, "multi_plot_result")
     if not os.path.exists(plot_result):
         os.makedirs(plot_result)
-    # plot_result_confusion = os.path.join(patchs_path, "confusion")
-    # if not os.path.exists(plot_result_confusion):
-    #     os.makedirs(plot_result_confusion)
-    # plot_result_histograms = os.path.join(patchs_path, "histograms")
-    # if not os.path.exists(plot_result_histograms):
-    #     os.makedirs(plot_result_histograms)
 
     patchs = sorted(os.listdir(os.path.join(patchs_path, "patchs")))
     all_criterion = np.zeros((len(patchs), 7))
@@ -50,10 +53,12 @@ if __name__ == '__main__':
         result = os.path.join(folder, patch)
         if not os.path.exists(result):
             os.makedirs(result)
-        eval_path = "test{}_patch{}_scale{}-{}".format(int(test_num),int(index),int(min_scale*10), int(max_scale*10))
+        eval_path = "test{}_patch{}_scale{}-{}".format(int(test_num),int(index), int(min_scale*10), int(max_scale*10))
         with torch.no_grad():
             eva, rmse, ave_accuracy, precision, recall, f_score = testModel(dronet, testing_dataloader, folder, patch, is_patch_test, adv_patch,
-                                                                            do_rotate=True, do_pespective=True, nested=3, location="random",
+                                                                            attack_mode, steer_target, centre,
+                                                                            do_rotate=do_rotate, do_pespective=do_pespective,
+                                                                            nested=nested, nested_size=nested_size, location=location,
                                                                             min_scale=min_scale, max_scale=max_scale)
             all_criterion[index, 0] = index
             all_criterion[index, 1] = eva
@@ -73,7 +78,7 @@ if __name__ == '__main__':
                 dict_labels = json.load(f2)
             evaluation_metrics(dict_steerings['pred_steerings'], dict_steerings['real_steerings'],
                                dict_labels['real_labels'], dict_labels['pred_probabilities'],
-                               ['no collision', 'collision'], attack_mode, title_name=eval_path, saved_path=plot_result, ishow=True)
+                               ['no collision', 'collision'], attack_mode, steer_target, title_name=eval_path, saved_path=plot_result, ishow=True)
             index = index + 1
 
     # all_criterion

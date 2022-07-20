@@ -21,8 +21,8 @@ torch.cuda.manual_seed(0)
 np.random.seed(0)
 
 
-def testModel(model, testing_dataloader, test_path, eval_path, is_patch_test, adv_patch,
-              do_rotate=True, do_pespective=True, nested=0, location="random",
+def testModel(model, testing_dataloader, test_path, eval_path, is_patch_test, adv_patch, patch_name, steer_target, centre,
+              do_rotate=True, do_pespective=True, nested=0, nested_size=0.5, location="random",
               min_scale=1, max_scale=3.6):
     '''
     tests the model with the following metrics:
@@ -61,9 +61,10 @@ def testModel(model, testing_dataloader, test_path, eval_path, is_patch_test, ad
         # patch testing
         if is_patch_test:
             # patch projection
-            adv_batch_t = patch_transformer(adv_patch, steer_true, 200, 400, do_rotate, do_pespective, nested, location, min_scale, max_scale)
+            adv_batch_t = patch_transformer(adv_patch, steer_true, 200, 400, patch_name, steer_target, do_rotate, do_pespective, nested, nested_size, centre, location, min_scale, max_scale)
             p_img_batch = patch_applier(img_cuda, adv_batch_t)
-            img_cuda = F.interpolate(p_img_batch, (200, 200))  # Up or Down sample
+            # img_cuda = F.interpolate(p_img_batch, (200, 200))  # Up or Down sample
+            img_cuda = p_img_batch
 
         steer_pred, coll_pred = model(img_cuda)
         pred_steer = steer_pred.squeeze(-1)
@@ -238,10 +239,10 @@ def plot_loss(experiment_rootdir, fname):
 
 
 def evaluation_metrics(pred_steerings, real_steerings, real_labels, pred_prob, classes,
-                       attack_mode, normalize=True, title_name=None, saved_path=None, ishow=True):
+                       attack_mode, steer_target, normalize=True, title_name=None, saved_path=None, ishow=True):
     ### for the steering angle
-    pred_steerings = np.array(pred_steerings)*90
-    real_steerings = np.array(real_steerings)*90
+    pred_steerings = np.array(pred_steerings) * 90
+    real_steerings = np.array(real_steerings) * 90
     max_h = np.maximum(np.max(pred_steerings), np.max(real_steerings))
     min_h = np.minimum(np.min(pred_steerings), np.min(real_steerings))
     bins = np.linspace(min_h, max_h, num=100)
@@ -306,17 +307,17 @@ def evaluation_metrics(pred_steerings, real_steerings, real_labels, pred_prob, c
         mF1 = cm[1, 0] / (cm[1, 0] + (cm[0, 1] + cm[1, 1])/2)
     elif attack_mode == "YA":
         ASD = np.mean(np.abs((pred_steerings - real_steerings)))
-        MAE = mean_ablosute_error(pred_steerings, np.ones(len(pred_steerings))*90)
-        RMSE = compute_rmse(pred_steerings, np.ones(len(pred_steerings))*90)
+        MAE = mean_ablosute_error(pred_steerings, np.ones(len(pred_steerings)) * steer_target * 90)
+        RMSE = compute_rmse(pred_steerings, np.ones(len(pred_steerings)) * steer_target * 90)
         mASR = cm[1, 0] / (cm[1, 0] + cm[1, 1])
         mF1 = cm[1, 0] / (cm[1, 0] + (cm[0, 1] + cm[1, 1]) / 2)
-    elif attack_mode == "CA":
+    elif attack_mode == "OA":
         # False
         ASD = np.mean(np.abs((pred_steerings - real_steerings)))
         MAE = mean_ablosute_error(pred_steerings, np.zeros(len(pred_steerings)))
         RMSE = compute_rmse(pred_steerings, np.zeros(len(pred_steerings)))
-        mASR = cm[1, 0] / (cm[1, 0] + cm[1, 1])
-        mF1 = cm[1, 0] / (cm[1, 0] + (cm[0, 1] + cm[1, 1]) / 2)
+        mASR = cm[0, 1] / (cm[0, 0] + cm[0, 1])
+        mF1 = cm[0, 1] / (cm[0, 1] + (cm[0, 0] + cm[1, 0]) / 2)
     else:
         print("attack_mode is wrong!!!!")
     plt.text(0.05, 0.8,  "ASD: " + str(np.around(ASD, 5) ) + "°", fontdict=font_blue)
