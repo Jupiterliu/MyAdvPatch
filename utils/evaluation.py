@@ -243,6 +243,8 @@ def evaluation_metrics(pred_steerings, real_steerings, real_labels, pred_prob, c
     ### for the steering angle
     pred_steerings = np.array(pred_steerings) * 90
     real_steerings = np.array(real_steerings) * 90
+    pred_steer_min = np.min(pred_steerings)
+    pred_steer_max = np.max(pred_steerings)
     max_h = np.maximum(np.max(pred_steerings), np.max(real_steerings))
     min_h = np.minimum(np.min(pred_steerings), np.min(real_steerings))
     bins = np.linspace(min_h, max_h, num=100)
@@ -320,11 +322,13 @@ def evaluation_metrics(pred_steerings, real_steerings, real_labels, pred_prob, c
         mF1 = cm[0, 1] / (cm[0, 1] + (cm[0, 0] + cm[1, 0]) / 2)
     else:
         print("attack_mode is wrong!!!!")
-    plt.text(0.05, 0.8,  "ASD: " + str(np.around(ASD, 5) ) + "°", fontdict=font_blue)
-    plt.text(0.05, 0.65, "MAE: " + str(np.around(MAE, 5)) + "°", fontdict=font_blue)
-    plt.text(0.05, 0.5,  "RMSE:" + str(np.around(RMSE, 5)), fontdict=font_blue)
-    plt.text(0.05, 0.35, "mASR:" + str(np.around(mASR, 5)*100) + "%", fontdict=font_red)
-    plt.text(0.05, 0.2,  "mF1: " + str(np.around(mF1, 5)*100) + "%", fontdict=font_red)
+    plt.text(0.05, 0.9,  "ASD:           " + str(np.around(ASD,  3)) + "°", fontdict=font_blue)
+    plt.text(0.05, 0.75, "MAE:           " + str(np.around(MAE,  3)) + "°", fontdict=font_blue)
+    plt.text(0.05, 0.6,  "RMSE:        "   + str(np.around(RMSE, 3)), fontdict=font_blue)
+    plt.text(0.05, 0.45, "Min_pred:  "     + str(np.around(pred_steer_min, 3)) + "°", fontdict=font_blue)
+    plt.text(0.05, 0.3,  "Max_pred:  "     + str(np.around(pred_steer_max, 3)) + "°", fontdict=font_blue)
+    plt.text(0.05, 0.15, "mASR:        "   + str(np.around(mASR, 3) * 100) + "%", fontdict=font_red)
+    plt.text(0.05, 0.,   "mF1:           " + str(np.around(mF1,  3) * 100) + "%", fontdict=font_red)
     if ishow:
         # plt.tight_layout()
         plt.suptitle(attack_mode + ":" + title_name)

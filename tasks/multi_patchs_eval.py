@@ -21,18 +21,18 @@ if __name__ == '__main__':
 
     is_patch_test = True
 
-    patchs_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test13_p400_lr01_balance100-100_beta2_nps001_tv25_nest4_scale01-09"
+    patchs_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test17_p400_lr005_balance10-10_beta5_nps001_tv25_nest0_scale01-35"
     print("Loaded patches path: ", patchs_path)
-    test_num = 13
+    test_num = 17
 
-    attack_mode = "HA"
-    steer_target = 0.5
+    attack_mode = "OA"
+    steer_target = 1
 
     min_scale = 0.5
     max_scale = 3.5
     do_rotate = True
     do_pespective = True
-    nested = 4
+    nested = 0
     nested_size = 0.5
     location = "random"
     centre = False

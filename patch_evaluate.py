@@ -25,10 +25,10 @@ if __name__ == '__main__':
     testing_dataset = DronetDataset('/root/Python_Program_Remote/MyAdvPatch/datasets_png', 'testing', image_mode ,augmentation=False)
     testing_dataloader = torch.utils.data.DataLoader(testing_dataset, batch_size=64, shuffle=True, num_workers=10)
 
-    test_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test13_p400_lr01_balance100-100_beta2_nps001_tv25_nest4_scale01-09"
-    patchfile = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test13_p400_lr01_balance100-100_beta2_nps001_tv25_nest4_scale01-09/patchs/20220719-162642_steer0.0_coll0.0_ep047.png"
-    test_num = 13
-    patch_epoch = 47
+    test_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test17_p400_lr005_balance10-10_beta5_nps001_tv25_nest0_scale01-35"
+    patchfile = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test17_p400_lr005_balance10-10_beta5_nps001_tv25_nest0_scale01-35/patchs/20220725-165720_steer0.0_coll1.0_ep095.png"
+    test_num = 17
+    patch_epoch = 95
     # adv_patch_cpu = torch.rand((3, 200, 200))
     # im = transforms.ToPILImage('RGB')(adv_patch_cpu)
     # plt.imshow(im)
@@ -40,17 +40,17 @@ if __name__ == '__main__':
     is_patch_test = True
 
     is_distance_test = True
-    fixed_distance = np.arange(0.5, 3.6, 0.1)
+    fixed_distance = np.arange(0.5, 2.1, 0.1)
     metrics_results = np.zeros((len(fixed_distance), 6))
     min_scale = 2
     max_scale = 2
     do_rotate = True
     do_pespective = True
-    nested = 4
+    nested = 0
     nested_size = 0.5
     location = "random"
-    attack_mode = "HA"
-    steer_target = 0.5
+    attack_mode = "OA"
+    steer_target = 1
     centre = False
 
     plot_result = os.path.join(test_path, "fixed_dis_plot_result_nested")

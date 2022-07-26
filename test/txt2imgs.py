@@ -4,13 +4,6 @@ import os
 
 path = "/root/Python_Program_Remote/MyAdvPatch/test/on_board_images/SITL"
 HA = np.loadtxt("/root/Python_Program_Remote/MyAdvPatch/test/on_board_images/SITL/YA-HA-2.txt", delimiter=",")
-# name = "HA-1"
-# name = "HA-2"
-# name = "YA-OA-1"
-# name = "YA-2"
-# name = "OA-1"
-# name = "OA-2"
-# name = "YA-HA-1"
 name = "YA-HA-2"
 # YA = np.loadtxt("/root/Python_Program_Remote/MyAdvPatch/test/on_board_images/SITL/2022-07-16_22-55-30-YA-2/pred_labels/labels.txt", delimiter=",")
 

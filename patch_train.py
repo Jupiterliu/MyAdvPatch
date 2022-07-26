@@ -80,11 +80,11 @@ class PatchTrainer(object):
         max_scale = 3.5
         do_rotate = True
         do_pespective = True
-        nested = 4
+        nested = 0
         nested_size = 0.5
         location = "random"
         centre = False
-        saved_patch_name = "test14_p400_lr005_balance10-10_nobeta_nps001_tv25_nest4_scale{:0>2d}-{:0>2d}".format(int(min_scale*10), int(max_scale*10))
+        saved_patch_name = "test17_p400_lr005_balance10-10_beta5_nps001_tv25_nest0_scale{:0>2d}-{:0>2d}".format(int(min_scale*10), int(max_scale*10))
         patch_path = os.path.join(root_path, saved_patch_name, "patchs")
         if not os.path.exists(patch_path):
             os.makedirs(patch_path)
@@ -101,9 +101,9 @@ class PatchTrainer(object):
             ep_tv_loss = 0
             ep_loss = 0
             bt0 = time.time()
-            # other_val = (self.config.gamma - torch.exp(torch.Tensor([-1 * (0.5) * (epoch - self.config.beta)]))).float().cuda()
-            # beta = torch.max(torch.Tensor([0]).float().cuda(), other_val)
-            beta = torch.Tensor([1.0]).float().cuda()
+            other_val = (self.config.gamma - torch.exp(torch.Tensor([-1 * (0.2) * (epoch - self.config.beta)]))).float().cuda()
+            beta = torch.max(torch.Tensor([0]).float().cuda(), other_val)
+            # beta = torch.Tensor([1.0]).float().cuda()
             for i_batch, (img_batch, steer_true, coll_true) in tqdm(enumerate(training_dataloader),
                                                                     desc=f'Running epoch {epoch}', total=self.epoch_length):
                 with autograd.detect_anomaly():

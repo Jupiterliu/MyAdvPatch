@@ -169,7 +169,7 @@ class PatchTransformer(nn.Module):
         self.medianpooler = MedianPool2d(7, same=True)
 
     def forward(self, adv_patch, steer_true, img_size, patch_size, patch_name, steer_target,
-                do_rotate=True, do_pespective=True, nested=1, nested_size=0.5, centre=False,
+                do_rotate=True, do_pespective=True, nested=4, nested_size=0.5, centre=False,
                 location="random", min_scale=1, max_scale=3.6):
         # adv_patch = F.conv2d(adv_patch.unsqueeze(0),self.kernel,padding=(2,2))
         adv_patch = transforms.Resize((int(patch_size * 0.5), int(patch_size * 0.5)))(adv_patch)
@@ -231,7 +231,7 @@ class PatchTransformer(nn.Module):
             adv_b_rotation = rotations(adv_b_perspective)
 
             # Location: random, centre, corner
-            adv_b_pad = patch_pad(location, adv_b_rotation, img_size, patch_name, steer_target)
+            adv_b_pad = patch_pad(location, adv_b_rotation, img_size, patch_name, steer_target, centre=centre)
             # adv_b_pad = adv_b_rotation
 
             if i == 0:
@@ -433,11 +433,14 @@ def patch_nest(adv_patch, adv_batch, nested, nested_size, patch_name, steer_targ
 
     return adv_p_
 
-def patch_pad(location, adv_b_rotation, img_size, patch_name, steer_target):
+def patch_pad(location, adv_b_rotation, img_size, patch_name, steer_target, centre=False):
     length = adv_b_rotation.size(-1)
     if length > img_size:
         top = 0
-        if patch_name == "HA" or patch_name == "OA":
+        if centre == True:
+            left = int((adv_b_rotation.size(-1) / 2) - 100)
+            top = int((adv_b_rotation.size(-1) / 2) - 100)
+        elif patch_name == "HA" or patch_name == "OA":
             left = int((adv_b_rotation.size(-1) / 2) - 100)
         elif patch_name == "YA" and steer_target > 0:
             left = 0

@@ -23,7 +23,7 @@ class BaseConfig(object):
 
         self.patch_name = 'Base'
 
-        self.scheduler_factory = lambda x: optim.lr_scheduler.ReduceLROnPlateau(x, 'min', patience=40)  # default: patience=40
+        self.scheduler_factory = lambda x: optim.lr_scheduler.ReduceLROnPlateau(x, 'min', patience=20)  # default: patience=40
         self.max_tv = 0.165
 
         self.batch_size = 20
@@ -76,7 +76,7 @@ class YA(BaseConfig):
         self.batch_size = 128
         self.k = 128   # hard-mining
         self.num_workers = 10
-        self.beta = 2  # Mainly optimize the MSE Loss
+        self.beta = 5  # Mainly optimize the MSE Loss
         self.gamma = 1
 
         self.patch_size = 400
