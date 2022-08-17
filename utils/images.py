@@ -164,8 +164,8 @@ class PatchTransformer(nn.Module):
         self.min_angle = -8  #-10 / 180 * math.pi
         self.max_angle = 8  #10 / 180 * math.pi
         # self.nested_size = 0.5
-        self.min_distortion = 0.
-        self.max_distortion = 0.2
+        self.min_distortion = 0.5
+        self.max_distortion = 0.5
         self.medianpooler = MedianPool2d(7, same=True)
 
     def forward(self, adv_patch, steer_true, img_size, patch_size, patch_name, steer_target,
@@ -206,7 +206,7 @@ class PatchTransformer(nn.Module):
             angle = torch.cuda.FloatTensor(steer_true.size(0)).fill_(0)
         if do_pespective:
             distortion = torch.cuda.FloatTensor(steer_true.size(0)).uniform_(self.min_distortion, self.max_distortion)
-            p = torch.cuda.FloatTensor(steer_true.size(0)).uniform_(0.5, 1)
+            p = torch.cuda.FloatTensor(steer_true.size(0)).uniform_(1, 1)
         else:
             distortion = torch.cuda.FloatTensor(steer_true.size(0)).fill_(0)
             p = torch.cuda.FloatTensor(steer_true.size(0)).fill_(0)
@@ -306,12 +306,12 @@ def patch_nest(adv_patch, adv_batch, nested, nested_size, patch_name, steer_targ
         mypad0 = nn.ConstantPad2d((int(pad___ + 0.5), int(pad___), int(pad___ + 0.5), int(pad___)), 0)
         adv_p3 = mypad0(adv_p3)
         adv_p_ = patch_applier(adv_p_, adv_p3)
-    elif nested == 4 and centre:
+    elif nested == 5 and centre:
         pad_ = (adv_patch.size(-1) - int(adv_patch.size(-1) * nested_size)) / 2
         pad__ = (adv_patch.size(-1) - int(adv_patch.size(-1) * nested_size * nested_size)) / 2
         pad___ = (adv_patch.size(-1) - int(adv_patch.size(-1) * nested_size * nested_size * nested_size)) / 2
-        pad____ = (adv_patch.size(-1) - int(
-            adv_patch.size(-1) * nested_size * nested_size * nested_size * nested_size)) / 2
+        pad____ = (adv_patch.size(-1) - int(adv_patch.size(-1) * nested_size * nested_size * nested_size * nested_size)) / 2
+        pad_____ = (adv_patch.size(-1) - int(adv_patch.size(-1) * nested_size * nested_size * nested_size * nested_size * nested_size)) / 2
         adv_p1 = transforms.Resize(
             (int(adv_patch.size(-1) * nested_size), int(adv_patch.size(-1) * nested_size)))(
             adv_batch)  # Defaults: the center (40,40) is the nested region
@@ -337,12 +337,19 @@ def patch_nest(adv_patch, adv_batch, nested, nested_size, patch_name, steer_targ
         mypad4 = nn.ConstantPad2d((int(pad____ + 0.5), int(pad____), int(pad____ + 0.5), int(pad____)), 0)
         adv_p4 = mypad4(adv_p4)
         adv_p_ = patch_applier(adv_p_, adv_p4)
-    elif nested == 4 and (patch_name == "HA" or patch_name == "OA"):
+        adv_p5 = transforms.Resize(
+            (int(adv_patch.size(-1) * nested_size * nested_size * nested_size * nested_size * nested_size),
+             int(adv_patch.size(-1) * nested_size * nested_size * nested_size * nested_size * nested_size)))(
+            adv_batch)
+        mypad5 = nn.ConstantPad2d((int(pad_____ + 0.5), int(pad_____), int(pad_____ + 0.5), int(pad_____)), 0)
+        adv_p5 = mypad5(adv_p5)
+        adv_p_ = patch_applier(adv_p_, adv_p5)
+    elif nested == 5 and (patch_name == "HA" or patch_name == "OA"):
         pad_ = (adv_patch.size(-1) - int(adv_patch.size(-1) * nested_size)) / 2
         pad__ = (adv_patch.size(-1) - int(adv_patch.size(-1) * nested_size * nested_size)) / 2
         pad___ = (adv_patch.size(-1) - int(adv_patch.size(-1) * nested_size * nested_size * nested_size)) / 2
-        pad____ = (adv_patch.size(-1) - int(
-            adv_patch.size(-1) * nested_size * nested_size * nested_size * nested_size)) / 2
+        pad____ = (adv_patch.size(-1) - int(adv_patch.size(-1) * nested_size * nested_size * nested_size * nested_size)) / 2
+        pad_____ = (adv_patch.size(-1) - int(adv_patch.size(-1) * nested_size * nested_size * nested_size * nested_size * nested_size)) / 2
         adv_p1 = transforms.Resize(
             (int(adv_patch.size(-1) * nested_size), int(adv_patch.size(-1) * nested_size)))(
             adv_batch)  # Defaults: the center (40,40) is the nested region
@@ -368,12 +375,21 @@ def patch_nest(adv_patch, adv_batch, nested, nested_size, patch_name, steer_targ
         mypad4 = nn.ConstantPad2d((int(pad____ + 0.5), int(pad____), int(0), int(pad____ * 2)), 0)
         adv_p4 = mypad4(adv_p4)
         adv_p_ = patch_applier(adv_p_, adv_p4)
-    elif nested == 4 and patch_name == "YA" and steer_target > 0:
+        adv_p5 = transforms.Resize(
+            (int(adv_patch.size(-1) * nested_size * nested_size * nested_size * nested_size * nested_size),
+             int(adv_patch.size(-1) * nested_size * nested_size * nested_size * nested_size * nested_size)))(
+            adv_batch)
+        mypad5 = nn.ConstantPad2d((int(pad_____ + 0.5), int(pad_____), int(0), int(pad_____ * 2)), 0)
+        adv_p5 = mypad5(adv_p5)
+        adv_p_ = patch_applier(adv_p_, adv_p5)
+    elif nested == 5 and patch_name == "YA" and steer_target > 0:
         pad_ = (adv_patch.size(-1) - int(adv_patch.size(-1) * nested_size))
         pad__ = (adv_patch.size(-1) - int(adv_patch.size(-1) * nested_size * nested_size))
         pad___ = (adv_patch.size(-1) - int(adv_patch.size(-1) * nested_size * nested_size * nested_size))
         pad____ = (adv_patch.size(-1) - int(
             adv_patch.size(-1) * nested_size * nested_size * nested_size * nested_size))
+        pad_____ = (adv_patch.size(-1) - int(
+            adv_patch.size(-1) * nested_size * nested_size * nested_size * nested_size * nested_size))
         adv_p1 = transforms.Resize(
             (int(adv_patch.size(-1) * nested_size), int(adv_patch.size(-1) * nested_size)))(
             adv_batch)  # Defaults: the center (40,40) is the nested region
@@ -399,12 +415,21 @@ def patch_nest(adv_patch, adv_batch, nested, nested_size, patch_name, steer_targ
         mypad4 = nn.ConstantPad2d((int(0), int(pad____ + 0.5), int(0), int(pad____ + 0.5)), 0)
         adv_p4 = mypad4(adv_p4)
         adv_p_ = patch_applier(adv_p_, adv_p4)
-    elif nested == 4 and patch_name == "YA" and steer_target < 0:
+        adv_p5 = transforms.Resize(
+            (int(adv_patch.size(-1) * nested_size * nested_size * nested_size * nested_size * nested_size),
+             int(adv_patch.size(-1) * nested_size * nested_size * nested_size * nested_size * nested_size)))(
+            adv_batch)
+        mypad5 = nn.ConstantPad2d((int(0), int(pad_____ + 0.5), int(0), int(pad_____ + 0.5)), 0)
+        adv_p5 = mypad5(adv_p5)
+        adv_p_ = patch_applier(adv_p_, adv_p5)
+    elif nested == 5 and patch_name == "YA" and steer_target < 0:
         pad_ = (adv_patch.size(-1) - int(adv_patch.size(-1) * nested_size))
         pad__ = (adv_patch.size(-1) - int(adv_patch.size(-1) * nested_size * nested_size))
         pad___ = (adv_patch.size(-1) - int(adv_patch.size(-1) * nested_size * nested_size * nested_size))
         pad____ = (adv_patch.size(-1) - int(
             adv_patch.size(-1) * nested_size * nested_size * nested_size * nested_size))
+        pad_____ = (adv_patch.size(-1) - int(
+            adv_patch.size(-1) * nested_size * nested_size * nested_size * nested_size * nested_size))
         adv_p1 = transforms.Resize(
             (int(adv_patch.size(-1) * nested_size), int(adv_patch.size(-1) * nested_size)))(
             adv_batch)  # Defaults: the center (40,40) is the nested region
@@ -430,6 +455,13 @@ def patch_nest(adv_patch, adv_batch, nested, nested_size, patch_name, steer_targ
         mypad4 = nn.ConstantPad2d((int(pad____ + 0.5), int(0), int(0), int(pad____ + 0.5)), 0)
         adv_p4 = mypad4(adv_p4)
         adv_p_ = patch_applier(adv_p_, adv_p4)
+        adv_p5 = transforms.Resize(
+            (int(adv_patch.size(-1) * nested_size * nested_size * nested_size * nested_size * nested_size),
+             int(adv_patch.size(-1) * nested_size * nested_size * nested_size * nested_size * nested_size)))(
+            adv_batch)
+        mypad5 = nn.ConstantPad2d((int(pad_____ + 0.5), int(0), int(0), int(pad_____ + 0.5)), 0)
+        adv_p5 = mypad5(adv_p5)
+        adv_p_ = patch_applier(adv_p_, adv_p5)
 
     return adv_p_
 
@@ -444,7 +476,7 @@ def patch_pad(location, adv_b_rotation, img_size, patch_name, steer_target, cent
             left = int((adv_b_rotation.size(-1) / 2) - 100)
         elif patch_name == "YA" and steer_target > 0:
             left = 0
-        else:  # elif patch_name == "YA" and steer_target < 0:
+        elif patch_name == "YA" and steer_target < 0:
             left = int(adv_b_rotation.size(-1) - 200)
         adv_b_pad = TF.crop(adv_b_rotation, top, left, 200, 200)
     else:

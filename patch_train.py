@@ -77,14 +77,14 @@ class PatchTrainer(object):
 
         root_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch"
         min_scale = 0.1
-        max_scale = 3.5
+        max_scale = 5
         do_rotate = True
         do_pespective = True
-        nested = 0
+        nested = 5
         nested_size = 0.5
         location = "random"
-        centre = False
-        saved_patch_name = "test17_p400_lr005_balance10-10_beta5_nps001_tv25_nest0_scale{:0>2d}-{:0>2d}".format(int(min_scale*10), int(max_scale*10))
+        centre = True
+        saved_patch_name = "test21_p400_lr005_balance10-10_nobeta_nps001_tv25_nest5_scale{:0>2d}-{:0>2d}".format(int(min_scale*10), int(max_scale*10))
         patch_path = os.path.join(root_path, saved_patch_name, "patchs")
         if not os.path.exists(patch_path):
             os.makedirs(patch_path)
@@ -101,7 +101,7 @@ class PatchTrainer(object):
             ep_tv_loss = 0
             ep_loss = 0
             bt0 = time.time()
-            other_val = (self.config.gamma - torch.exp(torch.Tensor([-1 * (0.2) * (epoch - self.config.beta)]))).float().cuda()
+            other_val = (self.config.gamma - torch.exp(torch.Tensor([-1 * (0.1) * (epoch - self.config.beta)]))).float().cuda()
             beta = torch.max(torch.Tensor([0]).float().cuda(), other_val)
             # beta = torch.Tensor([1.0]).float().cuda()
             for i_batch, (img_batch, steer_true, coll_true) in tqdm(enumerate(training_dataloader),

@@ -21,21 +21,21 @@ if __name__ == '__main__':
 
     is_patch_test = True
 
-    patchs_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test17_p400_lr005_balance10-10_beta5_nps001_tv25_nest0_scale01-35"
+    patchs_path = "/root/Python_Program_Remote/MyAdvPatch/saved_patch/test21_p400_lr005_balance10-10_nobeta_nps001_tv25_nest5_scale01-50"
     print("Loaded patches path: ", patchs_path)
-    test_num = 17
+    test_num = 21
 
-    attack_mode = "OA"
-    steer_target = 1
+    attack_mode = "YA"
+    steer_target = -1
 
-    min_scale = 0.5
-    max_scale = 3.5
+    min_scale = 0.1
+    max_scale = 5
     do_rotate = True
     do_pespective = True
-    nested = 0
+    nested = 5
     nested_size = 0.5
     location = "random"
-    centre = False
+    centre = True
 
     folder = os.path.join(patchs_path, "multi_patchs_eval_result")
     if not os.path.exists(folder):

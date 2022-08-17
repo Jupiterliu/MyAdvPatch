@@ -76,7 +76,7 @@ class YA(BaseConfig):
         self.batch_size = 128
         self.k = 128   # hard-mining
         self.num_workers = 10
-        self.beta = 5  # Mainly optimize the MSE Loss
+        self.beta = 10  # Mainly optimize the MSE Loss
         self.gamma = 1
 
         self.patch_size = 400
@@ -86,7 +86,7 @@ class YA(BaseConfig):
         self.is_save_temp = False
 
         self.is_targeted = True  # False0
-        self.steer_target = 1
+        self.steer_target = -1
         self.coll_target = 0.
         self.use_old_loss = True  # False or True
 
@@ -111,7 +111,7 @@ class OA(BaseConfig):
         self.batch_size = 128  # defaults: 64
         self.k = 128   # hard-mining
         self.num_workers = 10
-        self.beta = 5
+        self.beta = 10
         self.gamma = 1
 
         self.patch_size = 400
