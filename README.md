@@ -33,9 +33,3 @@ You also can evaluate the attacking effect of a generated patch by running:
 ```
 python patch_evaluate.py && python plot_result.py
 ```
-# Implement Attack 
-You can attack a Dronet-based UAV both in SITL(Sofeware in the Loop) and HITL(Hardware in the Loop).
-## SITL
-UAV simulation device: Parrot Bebop2
-## HITL
-UAV device: Parrot Bebop2
