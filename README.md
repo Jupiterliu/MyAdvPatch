@@ -1,4 +1,6 @@
 # Physical Adversarial Attack to Dronet
+This is the code for paper RPAU: Fooling the Eyes of UAVs via Physical Adversarial Patches, which is under review.
+
 This repository is based on the Dronet, which is a uav navigation and collision avoidance model: https://github.com/uzh-rpg/rpg_public_dronet
 
 Dronet is implemented by Keras/Tensorflow, but we here recurrence it by Pytorch in the file `DroNet_Pytorch`
