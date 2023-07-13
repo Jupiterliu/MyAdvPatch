@@ -38,4 +38,4 @@ python patch_evaluate.py && python plot_result.py
 
 # Experiments
 ## The full set of the UAV and sensors used
-![](full set.jpg)
+![The full set](full set.jpg)
